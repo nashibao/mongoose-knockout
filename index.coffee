@@ -53,6 +53,31 @@ class Model
     @last_err = oo(false)
     @errors = oa([])
 
+    # validation ----
+    @last_validate_err = oo(false)
+    @validate_errors = oa([])
+
+  validate: (doc)=>
+    for key of @model
+      atrs = @model[key]
+      if atrs.required
+        if not doc[key]
+          msg = 'required field: ' + key
+          @validate_errors.push(msg)
+          @last_validate_err(msg)
+          return false
+      if atrs.validate
+        for valid in atrs.validate
+          data = false
+          valid.validator doc[key], (d)=>
+            data = d
+          if not data
+            @validate_errors.push(valid.msg)
+            @last_validate_err(valid.msg)
+            return false
+    @last_validate_err(false)
+    return true
+
 
   event: (name)=>
     return @collection_name + " " + name
@@ -69,10 +94,15 @@ class Model
 
   # C
   create: (doc, cb)=>
+    if not @validate(doc)
+      if cb
+        cb(@last_validate_err())
+      return false
     @socket.emit @event('create'), {doc: doc}, (err)=>
       if cb
         cb(err)
       @debug_error(err)
+    return true
 
   # U
   update: (conditions, update, options, cb)=>

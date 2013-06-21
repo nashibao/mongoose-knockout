@@ -44,6 +44,7 @@ Model = (function() {
     this.create = __bind(this.create, this);
     this.debug_error = __bind(this.debug_error, this);
     this.event = __bind(this.event, this);
+    this.validate = __bind(this.validate, this);
     var _this = this;
     this.name_space = name_space;
     this.collection_name = collection_name;
@@ -66,7 +67,42 @@ Model = (function() {
     this.cursors = [];
     this.last_err = oo(false);
     this.errors = oa([]);
+    this.last_validate_err = oo(false);
+    this.validate_errors = oa([]);
   }
+
+  Model.prototype.validate = function(doc) {
+    var atrs, data, key, msg, valid, _i, _len, _ref,
+      _this = this;
+    for (key in this.model) {
+      atrs = this.model[key];
+      if (atrs.required) {
+        if (!doc[key]) {
+          msg = 'required field: ' + key;
+          this.validate_errors.push(msg);
+          this.last_validate_err(msg);
+          return false;
+        }
+      }
+      if (atrs.validate) {
+        _ref = atrs.validate;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          valid = _ref[_i];
+          data = false;
+          valid.validator(doc[key], function(d) {
+            return data = d;
+          });
+          if (!data) {
+            this.validate_errors.push(valid.msg);
+            this.last_validate_err(valid.msg);
+            return false;
+          }
+        }
+      }
+    }
+    this.last_validate_err(false);
+    return true;
+  };
 
   Model.prototype.event = function(name) {
     return this.collection_name + " " + name;
@@ -87,7 +123,13 @@ Model = (function() {
 
   Model.prototype.create = function(doc, cb) {
     var _this = this;
-    return this.socket.emit(this.event('create'), {
+    if (!this.validate(doc)) {
+      if (cb) {
+        cb(this.last_validate_err());
+      }
+      return false;
+    }
+    this.socket.emit(this.event('create'), {
       doc: doc
     }, function(err) {
       if (cb) {
@@ -95,6 +137,7 @@ Model = (function() {
       }
       return _this.debug_error(err);
     });
+    return true;
   };
 
   Model.prototype.update = function(conditions, update, options, cb) {
