@@ -1,0 +1,16 @@
+{
+  "name": "mongoose-socket-client",
+  "repo": "nashibao/mongoose-socket-client",
+  "description": "mongoose-socket-client",
+  "version": "0.0.1",
+  "keywords": [],
+  "dependencies": {
+    "rreverser/knockout": "*"
+  },
+  "development": {},
+  "license": "MIT",
+  "main": "index.js",
+  "scripts": [
+    "index.js"
+  ]
+}
