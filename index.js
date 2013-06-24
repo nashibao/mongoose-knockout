@@ -33,9 +33,12 @@ Cursor = (function() {
 
 Model = (function() {
   function Model(options) {
+    this.count = __bind(this.count, this);
+    this.find = __bind(this.find, this);
+    this.remove = __bind(this.remove, this);
     this.update = __bind(this.update, this);
     this.create = __bind(this.create, this);
-    this.debug_error = __bind(this.debug_error, this);
+    this._debug_error = __bind(this._debug_error, this);
     this.validate = __bind(this.validate, this);    this.name_space = options.name_space;
     this.collection_name = options.collection_name;
     this.model = options.model;
@@ -80,7 +83,7 @@ Model = (function() {
     return true;
   };
 
-  Model.prototype.debug_error = function(err, options) {
+  Model.prototype._debug_error = function(err, options) {
     this.last_err(err);
     if (err) {
       console.log(err);
@@ -93,18 +96,100 @@ Model = (function() {
     }
   };
 
-  Model.prototype.create = function(doc, cb) {
-    if (!this.validate(doc)) {
+  Model.prototype.create = function(query, cb, fn) {
+    var _this = this;
+    if (!this.validate(query.doc)) {
       if (cb) {
         cb(this.last_validate_err());
       }
       return false;
     }
-    return true;
+    return function(err) {
+      if (cb) {
+        cb(err);
+      }
+      return _this._debug_error(err);
+    };
   };
 
-  Model.prototype.update = function(conditions, update, options, cb) {
-    return delete update["_id"];
+  Model.prototype.update = function(query, cb) {
+    var _this = this;
+    if (query.update) {
+      delete query.update["_id"];
+    }
+    return function(err) {
+      if (cb) {
+        cb(err);
+      }
+      return _this._debug_error(err);
+    };
+  };
+
+  Model.prototype.remove = function(query, cb) {
+    var _this = this;
+    return function(err) {
+      if (cb) {
+        cb(err);
+      }
+      return _this._debug_error(err);
+    };
+  };
+
+  Model.prototype.find = function(query, cb, cursor) {
+    var conditions, fields, options,
+      _this = this;
+    conditions = query.conditions;
+    fields = query.fields;
+    options = query.options;
+    if (cursor == null) {
+      cursor = new Cursor(this, 'find', query, cb);
+      this.cursors.push(cursor);
+    }
+    return {
+      cursor: cursor,
+      cb: function(err, docs) {
+        var doc, _i, _len;
+        console.log('find', docs, err);
+        cursor.last_err = err;
+        if (err) {
+          cursor.err.push(err);
+        }
+        cursor.docs(docs);
+        for (_i = 0, _len = docs.length; _i < _len; _i++) {
+          doc = docs[_i];
+          _this._docs[doc["_id"]] = doc;
+          cursor._docs[doc["_id"]] = doc;
+        }
+        if (cb) {
+          cb(err, docs);
+        }
+        return _this._debug_error(err, docs);
+      }
+    };
+  };
+
+  Model.prototype.count = function(query, cb, cursor) {
+    var conditions,
+      _this = this;
+    conditions = query.conditions;
+    if (cursor == null) {
+      cursor = new Cursor(this, 'count', query, cb);
+      this.cursors.push(cursor);
+    }
+    return {
+      cursor: cursor,
+      cb: function(err, count) {
+        cursor.last_err = err;
+        if (err) {
+          cursor.err.push(err);
+        }
+        cursor.val(count);
+        if (cb) {
+          cb(err, count);
+        }
+        return _this._debug_error(err, count);
+      }
+    };
   };
 
   return Model;
@@ -126,14 +211,14 @@ SocketModel = (function(_super) {
     this.remove = __bind(this.remove, this);
     this.update = __bind(this.update, this);
     this.create = __bind(this.create, this);
-    this.event = __bind(this.event, this);
+    this._event = __bind(this._event, this);
     var _this = this;
     SocketModel.__super__.constructor.call(this, options);
     this.socket = options.socket;
     this.socket.on('connect', function() {
       return console.log('-- connected --', _this.name_space);
     });
-    this.socket.on(this.event('update'), function(data) {
+    this.socket.on(this._event('update'), function(data) {
       var cursor, _i, _len, _ref, _results;
       _ref = _this.cursors;
       _results = [];
@@ -145,109 +230,47 @@ SocketModel = (function(_super) {
     });
   }
 
-  SocketModel.prototype.event = function(name) {
+  SocketModel.prototype._event = function(name) {
     return this.collection_name + " " + name;
   };
 
-  SocketModel.prototype.create = function(doc, cb) {
-    var _this = this;
-    if (!(SocketModel.__super__.create.call(this, doc, cb))) {
+  SocketModel.prototype.create = function(query, cb) {
+    var _cb;
+    _cb = SocketModel.__super__.create.call(this, query, cb);
+    if (!_cb) {
       return false;
     }
-    this.socket.emit(this.event('create'), {
-      doc: doc
-    }, function(err) {
-      if (cb) {
-        cb(err);
-      }
-      return _this.debug_error(err);
-    });
+    this.socket.emit(this._event('create'), query, _cb);
     return true;
   };
 
-  SocketModel.prototype.update = function(conditions, update, options, cb) {
-    var _this = this;
-    SocketModel.__super__.update.call(this, conditions, update, options);
-    return this.socket.emit(this.event('update'), {
-      conditions: conditions,
-      update: update,
-      options: options
-    }, function(err) {
-      if (cb) {
-        cb(err);
-      }
-      return _this.debug_error(err);
-    });
+  SocketModel.prototype.update = function(query, cb) {
+    var _cb;
+    _cb = SocketModel.__super__.update.call(this, query, cb);
+    return this.socket.emit(this._event('update'), query, _cb);
   };
 
-  SocketModel.prototype.remove = function(conditions, cb) {
-    var _this = this;
-    return this.socket.emit(this.event('remove'), {
-      conditions: conditions
-    }, function(err) {
-      if (cb) {
-        cb(err);
-      }
-      return _this.debug_error(err);
-    });
+  SocketModel.prototype.remove = function(query, cb) {
+    var _cb;
+    _cb = SocketModel.__super__.remove.call(this, query, cb);
+    return this.socket.emit(this._event('remove'), query, _cb);
   };
 
   SocketModel.prototype.find = function(query, cb, cursor) {
-    var conditions, fields, options,
-      _this = this;
-    conditions = query.conditions;
-    fields = query.fields;
-    options = query.options;
-    if (cursor == null) {
-      cursor = new Cursor(this, 'find', query, cb);
-      this.cursors.push(cursor);
-    }
-    this.socket.emit(this.event('find'), {
-      conditions: conditions,
-      fields: fields,
-      options: options
-    }, function(err, docs) {
-      var doc, _i, _len;
-      console.log('find', docs, err);
-      cursor.last_err = err;
-      if (err) {
-        cursor.err.push(err);
-      }
-      cursor.docs(docs);
-      for (_i = 0, _len = docs.length; _i < _len; _i++) {
-        doc = docs[_i];
-        _this._docs[doc["_id"]] = doc;
-        cursor._docs[doc["_id"]] = doc;
-      }
-      if (cb) {
-        cb(err, docs);
-      }
-      return _this.debug_error(err, docs);
-    });
+    var temp, _cb;
+    temp = SocketModel.__super__.find.call(this, query, cb, cursor);
+    cursor = temp.cursor;
+    _cb = temp.cb;
+    this.socket.emit(this._event('find'), query, _cb);
     return cursor;
   };
 
   SocketModel.prototype.count = function(query, cb, cursor) {
-    var conditions,
-      _this = this;
-    conditions = query.conditions;
-    if (cursor == null) {
-      cursor = new Cursor(this, 'count', query, cb);
-      this.cursors.push(cursor);
-    }
-    this.socket.emit(this.event('count'), {
-      conditions: conditions
-    }, function(err, count) {
-      cursor.last_err = err;
-      if (err) {
-        cursor.err.push(err);
-      }
-      cursor.val(count);
-      if (cb) {
-        cb(err, count);
-      }
-      return _this.debug_error(err, count);
-    });
+    var temp, _cb;
+    temp = SocketModel.__super__.count.call(this, query, cb, cursor);
+    cursor = temp.cursor;
+    _cb = temp.cb;
+    this.socket.emit(this._event('count'), query, _cb);
     return cursor;
   };
 

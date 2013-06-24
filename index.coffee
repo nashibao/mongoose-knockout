@@ -65,7 +65,7 @@ class Model
     @last_validate_err(false)
     return true
 
-  debug_error: (err, options)=>
+  _debug_error: (err, options)=>
     @last_err(err)
     if err
       console.log err
@@ -75,16 +75,68 @@ class Model
       if options
         console.log options
 
-  create: (doc, cb)=>
-    if not @validate(doc)
+  create: (query, cb, fn)=>
+    if not @validate(query.doc)
       if cb
         cb(@last_validate_err())
       return false
-    return true
+    return (err)=>
+      if cb
+        cb(err)
+      @_debug_error(err)
 
-  update: (conditions, update, options, cb)=>
-    delete update["_id"]
+  update: (query, cb)=>
+    if query.update
+      delete query.update["_id"]
+    return (err)=>
+      if cb
+        cb(err)
+      @_debug_error(err)
 
+  remove: (query, cb)=>
+    return (err)=>
+      if cb
+        cb(err)
+      @_debug_error(err)
+
+  # R
+  find: (query, cb, cursor)=>
+    conditions = query.conditions
+    fields = query.fields
+    options = query.options
+    if not cursor?
+      cursor = new Cursor(@, 'find', query, cb)
+      @cursors.push(cursor)
+    return {cursor: cursor, cb: (err, docs)=>
+      console.log 'find', docs, err
+      cursor.last_err = err
+      if err
+        cursor.err.push(err)
+      cursor.docs(docs)
+      # todo: mapping
+      for doc in docs
+        @_docs[doc["_id"]] = doc
+        cursor._docs[doc["_id"]] = doc
+      if cb
+        cb(err, docs)
+      @_debug_error(err, docs)
+    }
+
+  # count
+  count: (query, cb, cursor)=>
+    conditions = query.conditions
+    if not cursor?
+      cursor = new Cursor(@, 'count', query, cb)
+      @cursors.push(cursor)
+    return {cursor: cursor, cb: (err, count)=>
+      cursor.last_err = err
+      if err
+        cursor.err.push(err)
+      cursor.val(count)
+      if cb
+        cb(err, count)
+      @_debug_error(err, count)
+    }
 
 
 class SocketModel extends Model
@@ -100,75 +152,64 @@ class SocketModel extends Model
     @socket.on 'connect', ()=>
       console.log '-- connected --', @name_space
 
-    @socket.on @event('update'), (data)=>
+    @socket.on @_event('update'), (data)=>
       for cursor in @cursors
         cursor.update()
 
-  event: (name)=>
+  _event: (name)=>
     return @collection_name + " " + name
 
   # C
-  create: (doc, cb)=>
-    if not (super doc, cb)
+  # query: {
+  #   doc: doc
+  # }
+  create: (query, cb)=>
+    _cb = super query, cb
+    if not _cb
       return false
-    @socket.emit @event('create'), {doc: doc}, (err)=>
-      if cb
-        cb(err)
-      @debug_error(err)
+    @socket.emit @_event('create'), query, _cb
     return true
 
   # U
-  update: (conditions, update, options, cb)=>
-    super conditions, update, options
-    @socket.emit @event('update'), {conditions: conditions, update: update, options: options}, (err)=>
-      if cb
-        cb(err)
-      @debug_error(err)
+  # query: {
+  #   conditions: conditions
+  #   update: update
+  #   options: options
+  # }
+  update: (query, cb)=>
+    _cb = super query, cb
+    @socket.emit @_event('update'), query, _cb
 
   # D
-  remove: (conditions, cb)=>
-    @socket.emit @event('remove'), {conditions: conditions}, (err)=>
-      if cb
-        cb(err)
-      @debug_error(err)
+  # query: {
+  #   conditions: conditions
+  # }
+  remove: (query, cb)=>
+    _cb = super query, cb
+    @socket.emit @_event('remove'), query, _cb
 
   # R
+  # query: {
+  #   conditions: conditions
+  #   fields: fields
+  #   options: options
+  # }
   find: (query, cb, cursor)=>
-    conditions = query.conditions
-    fields = query.fields
-    options = query.options
-    if not cursor?
-      cursor = new Cursor(@, 'find', query, cb)
-      @cursors.push(cursor)
-    @socket.emit @event('find'), {conditions: conditions, fields: fields, options: options}, (err, docs)=>
-      console.log 'find', docs, err
-      cursor.last_err = err
-      if err
-        cursor.err.push(err)
-      cursor.docs(docs)
-      # todo: mapping
-      for doc in docs
-        @_docs[doc["_id"]] = doc
-        cursor._docs[doc["_id"]] = doc
-      if cb
-        cb(err, docs)
-      @debug_error(err, docs)
+    temp = super query, cb, cursor
+    cursor = temp.cursor
+    _cb = temp.cb
+    @socket.emit @_event('find'), query, _cb
     return cursor
 
   # count
+  # query: {
+  #   conditions: conditions
+  # }
   count: (query, cb, cursor)=>
-    conditions = query.conditions
-    if not cursor?
-      cursor = new Cursor(@, 'count', query, cb)
-      @cursors.push(cursor)
-    @socket.emit @event('count'), {conditions: conditions}, (err, count)=>
-      cursor.last_err = err
-      if err
-        cursor.err.push(err)
-      cursor.val(count)
-      if cb
-        cb(err, count)
-      @debug_error(err, count)
+    temp = super query, cb, cursor
+    cursor = temp.cursor
+    _cb = temp.cb
+    @socket.emit @_event('count'), query, _cb
     return cursor
 
 exports.SocketModel = SocketModel
