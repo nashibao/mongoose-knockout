@@ -5,6 +5,7 @@
   "version": "0.0.1",
   "keywords": [],
   "dependencies": {
+    "ForbesLindesay/ajax": "*",
     "rreverser/knockout": "*"
   },
   "development": {},

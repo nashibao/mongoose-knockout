@@ -16,12 +16,12 @@ SocketAdapter = (function() {
     this.update = __bind(this.update, this);
     this.create = __bind(this.create, this);
     this.initialize = __bind(this.initialize, this);
-    this._event = __bind(this._event, this);    this.socket = options.socket ? options.socket : SocketAdapter.create_socket('', io);
+    this._end_point = __bind(this._end_point, this);    this.socket = options.socket ? options.socket : SocketAdapter.create_socket('', io);
     this.collection_name = options.collection_name;
     this.cursor_update = void 0;
   }
 
-  SocketAdapter.prototype._event = function(name) {
+  SocketAdapter.prototype._end_point = function(name) {
     return this.collection_name + " " + name;
   };
 
@@ -30,30 +30,30 @@ SocketAdapter = (function() {
     this.socket.on('connect', function() {
       return console.log('-- connected --', _this.name_space);
     });
-    return this.socket.on(this._event('update'), function(data) {
+    return this.socket.on(this._end_point('update'), function(data) {
       console.log('update???');
       return _this.cursor_update();
     });
   };
 
   SocketAdapter.prototype.create = function(query, cb) {
-    return this.socket.emit(this._event('create'), query, cb);
+    return this.socket.emit(this._end_point('create'), query, cb);
   };
 
   SocketAdapter.prototype.update = function(query, cb) {
-    return this.socket.emit(this._event('update'), query, cb);
+    return this.socket.emit(this._end_point('update'), query, cb);
   };
 
   SocketAdapter.prototype.remove = function(query, cb) {
-    return this.socket.emit(this._event('remove'), query, cb);
+    return this.socket.emit(this._end_point('remove'), query, cb);
   };
 
-  SocketAdapter.prototype.find = function(query, cb, cursor) {
-    return this.socket.emit(this._event('find'), query, cb);
+  SocketAdapter.prototype.find = function(query, cb) {
+    return this.socket.emit(this._end_point('find'), query, cb);
   };
 
-  SocketAdapter.prototype.count = function(query, cb, cursor) {
-    return this.socket.emit(this._event('count'), query, cb);
+  SocketAdapter.prototype.count = function(query, cb) {
+    return this.socket.emit(this._end_point('count'), query, cb);
   };
 
   return SocketAdapter;
