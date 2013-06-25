@@ -23,11 +23,25 @@ class Cursor
   update: ()=>
     @api[@func_name](@query, @cb, @)
 
+
 class Model
+
+  cursor_update: ()=>
+    console.log 'cursor_update'
+    for cursor in @cursors
+      cursor.update()
+
   constructor: (options)->
     @name_space = options.name_space
     @collection_name = options.collection_name
     @model = options.model
+
+    # adapter
+    @adapter = if options.adapter then options.adapter else new SocketAdapter()
+    @adapter.collection_name = options.collection_name
+    @adapter.cursor_update = @cursor_update
+
+    @adapter.initialize()
 
     # cache ---
     @_docs = {}
@@ -75,26 +89,27 @@ class Model
       if options
         console.log options
 
-  create: (query, cb, fn)=>
+  create: (query, cb)=>
     if not @validate(query.doc)
       if cb
         cb(@last_validate_err())
       return false
-    return (err)=>
+    @adapter.create query, (err)=>
       if cb
         cb(err)
       @_debug_error(err)
+    return true
 
   update: (query, cb)=>
     if query.update
       delete query.update["_id"]
-    return (err)=>
+    @adapter.update query, (err)=>
       if cb
         cb(err)
       @_debug_error(err)
 
   remove: (query, cb)=>
-    return (err)=>
+    @adapter.remove query, (err)=>
       if cb
         cb(err)
       @_debug_error(err)
@@ -107,7 +122,7 @@ class Model
     if not cursor?
       cursor = new Cursor(@, 'find', query, cb)
       @cursors.push(cursor)
-    return {cursor: cursor, cb: (err, docs)=>
+    @adapter.find query, (err, docs)=>
       console.log 'find', docs, err
       cursor.last_err = err
       if err
@@ -120,7 +135,7 @@ class Model
       if cb
         cb(err, docs)
       @_debug_error(err, docs)
-    }
+    return cursor
 
   # count
   count: (query, cb, cursor)=>
@@ -128,7 +143,7 @@ class Model
     if not cursor?
       cursor = new Cursor(@, 'count', query, cb)
       @cursors.push(cursor)
-    return {cursor: cursor, cb: (err, count)=>
+    @adapter.count query, (err, count)=>
       cursor.last_err = err
       if err
         cursor.err.push(err)
@@ -136,39 +151,40 @@ class Model
       if cb
         cb(err, count)
       @_debug_error(err, count)
-    }
+    return cursor
 
 
-class SocketModel extends Model
+class SocketAdapter
   @create_socket: (name_space, io)=>
     socket = io.connect '/socket_api_' + name_space
     return socket
 
   constructor: (options)->
-    super options
-    @socket = options.socket
+    # socket
+    @socket = if options.socket then options.socket else SocketAdapter.create_socket('', io)
+    @collection_name = options.collection_name
+    @cursor_update = undefined
 
+  _event: (name)=>
+    return @collection_name + " " + name
+
+  initialize: ()=>
     # initialize ---
     @socket.on 'connect', ()=>
       console.log '-- connected --', @name_space
 
+    # update
     @socket.on @_event('update'), (data)=>
-      for cursor in @cursors
-        cursor.update()
+      console.log 'update???'
+      @cursor_update()
 
-  _event: (name)=>
-    return @collection_name + " " + name
 
   # C
   # query: {
   #   doc: doc
   # }
   create: (query, cb)=>
-    _cb = super query, cb
-    if not _cb
-      return false
-    @socket.emit @_event('create'), query, _cb
-    return true
+    @socket.emit @_event('create'), query, cb
 
   # U
   # query: {
@@ -177,16 +193,14 @@ class SocketModel extends Model
   #   options: options
   # }
   update: (query, cb)=>
-    _cb = super query, cb
-    @socket.emit @_event('update'), query, _cb
+    @socket.emit @_event('update'), query, cb
 
   # D
   # query: {
   #   conditions: conditions
   # }
   remove: (query, cb)=>
-    _cb = super query, cb
-    @socket.emit @_event('remove'), query, _cb
+    @socket.emit @_event('remove'), query, cb
 
   # R
   # query: {
@@ -195,21 +209,14 @@ class SocketModel extends Model
   #   options: options
   # }
   find: (query, cb, cursor)=>
-    temp = super query, cb, cursor
-    cursor = temp.cursor
-    _cb = temp.cb
-    @socket.emit @_event('find'), query, _cb
-    return cursor
+    @socket.emit @_event('find'), query, cb
 
   # count
   # query: {
   #   conditions: conditions
   # }
   count: (query, cb, cursor)=>
-    temp = super query, cb, cursor
-    cursor = temp.cursor
-    _cb = temp.cb
-    @socket.emit @_event('count'), query, _cb
-    return cursor
+    @socket.emit @_event('count'), query, cb
 
-exports.SocketModel = SocketModel
+exports.Model = Model
+exports.SocketAdapter = SocketAdapter
