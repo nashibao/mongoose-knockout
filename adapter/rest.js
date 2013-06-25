@@ -30,7 +30,8 @@ RestAdapter = (function() {
       dataType: 'json',
       data: query,
       success: function(data, textStatus, jqXHR) {
-        return cb(data.err);
+        cb(data.err);
+        return _this.cursor_update();
       }
     });
   };
@@ -43,7 +44,8 @@ RestAdapter = (function() {
       dataType: 'json',
       data: query,
       success: function(data, textStatus, jqXHR) {
-        return cb(data.err);
+        cb(data.err);
+        return _this.cursor_update();
       }
     });
   };
@@ -56,7 +58,8 @@ RestAdapter = (function() {
       dataType: 'json',
       data: query,
       success: function(data, textStatus, jqXHR) {
-        return cb(data.err);
+        cb(data.err);
+        return _this.cursor_update();
       }
     });
   };

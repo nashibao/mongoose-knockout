@@ -26,6 +26,7 @@ class RestAdapter
       data: query
       success: (data, textStatus, jqXHR)=>
         cb(data.err)
+        @cursor_update()
     }
 
   # U
@@ -42,6 +43,7 @@ class RestAdapter
       data: query
       success: (data, textStatus, jqXHR)=>
         cb(data.err)
+        @cursor_update()
     }
 
   # D
@@ -56,6 +58,7 @@ class RestAdapter
       data: query
       success: (data, textStatus, jqXHR)=>
         cb(data.err)
+        @cursor_update()
     }
 
   # R
