@@ -11,6 +11,9 @@
   "license": "MIT",
   "main": "index.js",
   "scripts": [
+    "adapter/socket.js",
+    "adapter/rest.js",
+    "adapter/index.js",
     "index.js"
   ]
 }

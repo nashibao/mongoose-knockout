@@ -2,6 +2,9 @@
 build: components index.coffee
 	@echo building
 	coffee --compile --bare index.coffee
+	coffee --compile --bare adapter/socket.coffee
+	coffee --compile --bare adapter/rest.coffee
+	coffee --compile --bare adapter/index.coffee
 	@component build --dev
 
 components: component.json
