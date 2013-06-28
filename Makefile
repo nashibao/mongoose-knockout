@@ -7,6 +7,9 @@ build: components index.coffee
 	coffee --compile --bare adapter/index.coffee
 	@component build --dev
 
+install: components build/build.js
+	 component build --standalone mgscc --out . --name mgscc
+
 components: component.json
 	@component install --dev
 
