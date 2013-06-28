@@ -153,4 +153,6 @@ class Model
       @_debug_error(err, count)
     return cursor
 
+exports.adapter = require('./adapter')
+exports.Cursor = Cursor
 exports.Model = Model

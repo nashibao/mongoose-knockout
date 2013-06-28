@@ -989,6 +989,10 @@ Model = (function() {
 
 })();
 
+exports.adapter = require('./adapter');
+
+exports.Cursor = Cursor;
+
 exports.Model = Model;
 
 });
