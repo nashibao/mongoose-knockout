@@ -62,7 +62,7 @@ class Model
     for key of @model
       atrs = @model[key]
       if atrs.required
-        if not doc[key]
+        if not doc[key]?
           msg = 'required field: ' + key
           @validate_errors.push(msg)
           @last_validate_err(msg)

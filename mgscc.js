@@ -852,7 +852,7 @@ Model = (function() {
     for (key in this.model) {
       atrs = this.model[key];
       if (atrs.required) {
-        if (!doc[key]) {
+        if (doc[key] == null) {
           msg = 'required field: ' + key;
           this.validate_errors.push(msg);
           this.last_validate_err(msg);
