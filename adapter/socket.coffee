@@ -20,7 +20,6 @@ class SocketAdapter
 
     # update
     @socket.on @_end_point('update'), (data)=>
-      console.log 'update???'
       @cursor_update()
 
 

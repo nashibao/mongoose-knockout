@@ -640,7 +640,6 @@ SocketAdapter = (function() {
       return console.log('-- connected --', _this.name_space);
     });
     return this.socket.on(this._end_point('update'), function(data) {
-      console.log('update???');
       return _this.cursor_update();
     });
   };
