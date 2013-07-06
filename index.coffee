@@ -179,6 +179,10 @@ class Model
       if err
         cursor.err.push(err)
       cursor.docs(docs)
+      if docs.length > 0
+        cursor.val(docs[0])
+      else
+        cursor.val(false)
       # todo: mapping
       for doc in docs
         @_docs[doc["_id"]] = doc
