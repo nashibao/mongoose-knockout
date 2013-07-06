@@ -72,7 +72,7 @@ RestAdapter = (function() {
       dataType: 'json',
       data: query,
       success: function(data, textStatus, jqXHR) {
-        return cb(data.err, data.docs);
+        return cb(data.err, data.docs, data.options);
       }
     });
   };

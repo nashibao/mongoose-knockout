@@ -52,6 +52,7 @@ class SocketAdapter
   #   conditions: conditions
   #   fields: fields
   #   options: options
+  #   page: page  -> warning: this field is not in the mongoose API!!
   # }
   find: (query, cb)=>
     @socket.emit @_end_point('find'), query, cb
@@ -62,5 +63,13 @@ class SocketAdapter
   # }
   count: (query, cb)=>
     @socket.emit @_end_point('count'), query, cb
+
+  # aggregate
+  # query: {
+  #   array: array
+  #   options: options
+  # }
+  aggregate: (query, cb)=>
+    @socket.emit @_end_point('aggregate'), query, cb
 
 module.exports = SocketAdapter

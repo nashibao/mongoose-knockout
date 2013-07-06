@@ -2,6 +2,7 @@ require('knockout')
 
 oo = ko.observable
 oa = ko.observableArray
+co = ko.computed
 
 class Cursor
   constructor: (api, func_name, query, cb)->
@@ -12,11 +13,20 @@ class Cursor
     @val = oo(false)
 
     @docs = oa([])
-    # for search to cache
     @_docs = {}
 
     @last_err = oo(false)
     @errors = oa([])
+
+    # paging
+    @page = oo(0)
+    @page_length = oo(0)
+    @limit = oo(0)
+    @count = oo(0)
+    @pages = co ()=>
+      if @page_length() > 0
+        return [0..(@page_length()-1)]
+      return []
 
     @cb = cb
 
@@ -119,15 +129,20 @@ class Model
     conditions = query.conditions
     fields = query.fields
     options = query.options
+    page = query.page
     if not cursor?
       cursor = new Cursor(@, 'find', query, cb)
       @cursors.push(cursor)
-    @adapter.find query, (err, docs)=>
+    @adapter.find query, (err, docs, options)=>
       console.log 'find', docs, err
       cursor.last_err = err
       if err
         cursor.err.push(err)
       cursor.docs(docs)
+      cursor.page(options.page)
+      cursor.page_length(options.page_length)
+      cursor.limit(options.limit)
+      cursor.count(options.count)
       # todo: mapping
       for doc in docs
         @_docs[doc["_id"]] = doc
@@ -151,6 +166,26 @@ class Model
       if cb
         cb(err, count)
       @_debug_error(err, count)
+    return cursor
+
+  # count
+  aggregate: (query, cb, cursor)=>
+    array = query.array
+    if not cursor?
+      cursor = new Cursor(@, 'aggregate', query, cb)
+      @cursors.push(cursor)
+    @adapter.aggregate query, (err, docs)=>
+      cursor.last_err = err
+      if err
+        cursor.err.push(err)
+      cursor.docs(docs)
+      # todo: mapping
+      for doc in docs
+        @_docs[doc["_id"]] = doc
+        cursor._docs[doc["_id"]] = doc
+      if cb
+        cb(err, docs)
+      @_debug_error(err, docs)
     return cursor
 
 exports.adapter = require('./adapter')

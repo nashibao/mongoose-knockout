@@ -10,6 +10,7 @@ SocketAdapter = (function() {
   };
 
   function SocketAdapter(options) {
+    this.aggregate = __bind(this.aggregate, this);
     this.count = __bind(this.count, this);
     this.find = __bind(this.find, this);
     this.remove = __bind(this.remove, this);
@@ -54,6 +55,10 @@ SocketAdapter = (function() {
 
   SocketAdapter.prototype.count = function(query, cb) {
     return this.socket.emit(this._end_point('count'), query, cb);
+  };
+
+  SocketAdapter.prototype.aggregate = function(query, cb) {
+    return this.socket.emit(this._end_point('aggregate'), query, cb);
   };
 
   return SocketAdapter;

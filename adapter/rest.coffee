@@ -74,7 +74,7 @@ class RestAdapter
       dataType: 'json'
       data: query
       success: (data, textStatus, jqXHR)=>
-        cb(data.err, data.docs)
+        cb(data.err, data.docs, data.options)
     }
 
   # count
