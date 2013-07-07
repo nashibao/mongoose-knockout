@@ -1,5 +1,6 @@
 
 ajax = require('ajax')
+json = require('json')
 
 class RestAdapter
 
@@ -19,11 +20,12 @@ class RestAdapter
   #   doc: doc
   # }
   create: (query, cb)=>
+    q = json.stringify(query)
     ajax {
       url: @_end_point('create')
       type: 'POST'
       dataType: 'json'
-      data: query
+      data: {query: q}
       success: (data, textStatus, jqXHR)=>
         cb(data.err)
         @cursor_update()
@@ -36,11 +38,12 @@ class RestAdapter
   #   options: options
   # }
   update: (query, cb)=>
+    q = json.stringify(query)
     ajax {
       url: @_end_point('update')
       type: 'PUT'
       dataType: 'json'
-      data: query
+      data: {query: q}
       success: (data, textStatus, jqXHR)=>
         cb(data.err)
         @cursor_update()
@@ -51,11 +54,12 @@ class RestAdapter
   #   conditions: conditions
   # }
   remove: (query, cb)=>
+    q = json.stringify(query)
     ajax {
       url: @_end_point('remove')
       type: 'DELETE'
       dataType: 'json'
-      data: query
+      data: {query: q}
       success: (data, textStatus, jqXHR)=>
         cb(data.err)
         @cursor_update()
@@ -68,11 +72,12 @@ class RestAdapter
   #   options: options
   # }
   find: (query, cb)=>
+    q = json.stringify(query)
     ajax {
       url: @_end_point('find')
       type: 'GET'
       dataType: 'json'
-      data: query
+      data: {query: q}
       success: (data, textStatus, jqXHR)=>
         cb(data.err, data.docs, data.options)
     }
@@ -82,13 +87,31 @@ class RestAdapter
   #   conditions: conditions
   # }
   count: (query, cb)=>
+    q = json.stringify(query)
     ajax {
       url: @_end_point('count')
       type: 'GET'
       dataType: 'json'
-      data: query
+      data: {query: q}
       success: (data, textStatus, jqXHR)=>
         cb(data.err, data.count)
+    }
+
+  # R
+  # query: {
+  #   conditions: conditions
+  #   fields: fields
+  #   options: options
+  # }
+  aggregate: (query, cb)=>
+    q = json.stringify(query)
+    ajax {
+      url: @_end_point('aggregate')
+      type: 'GET'
+      dataType: 'json'
+      data: {query: q}
+      success: (data, textStatus, jqXHR)=>
+        cb(data.err, data.docs, data.options)
     }
 
 module.exports = RestAdapter
