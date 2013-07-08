@@ -6,7 +6,6 @@
   "keywords": [],
   "dependencies": {
     "ForbesLindesay/ajax": "*",
-    "rreverser/knockout": "*",
     "component/json": "*"
   },
   "development": {},
