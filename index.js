@@ -2,8 +2,6 @@
 var Cursor, Model, co, oa, oo,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-require('knockout');
-
 oo = ko.observable;
 
 oa = ko.observableArray;

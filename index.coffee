@@ -1,4 +1,3 @@
-require('knockout')
 
 oo = ko.observable
 oa = ko.observableArray
