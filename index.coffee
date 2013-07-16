@@ -1,3 +1,5 @@
+_ = require 'lodash'
+
 
 oo = ko.observable
 oa = ko.observableArray
@@ -66,6 +68,8 @@ class Model
     @last_validate_err = oo(false)
     @validate_errors = oa([])
 
+    @map = options.map || false
+
   # todo: update validation
   validate: (doc)=>
     for key of @model
@@ -133,6 +137,8 @@ class Model
       cursor = new Cursor(@, 'find', query, cb)
       @cursors.push(cursor)
     @adapter.find query, (err, docs, options)=>
+      if @map
+        docs = _.map(docs, @map)
       console.log 'find', docs, err
       cursor.last_err = err
       if err

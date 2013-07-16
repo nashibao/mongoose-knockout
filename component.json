@@ -6,7 +6,8 @@
   "keywords": [],
   "dependencies": {
     "ForbesLindesay/ajax": "*",
-    "component/json": "*"
+    "component/json": "*",
+    "bestiejs/lodash": "*"
   },
   "development": {},
   "license": "MIT",
