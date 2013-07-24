@@ -128,6 +128,24 @@ class Model
       @_debug_error(err)
 
   # R
+  findOne: (query, cb, cursor)=>
+    conditions = query.conditions
+    fields = query.fields
+    options = query.options
+    if not cursor?
+      cursor = new Cursor(@, 'findOne', query, cb)
+      @cursors.push(cursor)
+    @adapter.findOne query, (err, doc)=>
+      cursor.last_err = err
+      if err
+        cursor.err.push(err)
+      cursor.val(doc)
+      if cb
+        cb(err, doc)
+      @_debug_error(err, doc)
+    return cursor
+
+  # R
   find: (query, cb, cursor)=>
     conditions = query.conditions
     fields = query.fields

@@ -6461,6 +6461,7 @@ SocketAdapter = (function() {
     this.aggregate = __bind(this.aggregate, this);
     this.count = __bind(this.count, this);
     this.find = __bind(this.find, this);
+    this.findOne = __bind(this.findOne, this);
     this.remove = __bind(this.remove, this);
     this.update = __bind(this.update, this);
     this.create = __bind(this.create, this);
@@ -6496,6 +6497,10 @@ SocketAdapter = (function() {
     return this.socket.emit(this._end_point('remove'), query, cb);
   };
 
+  SocketAdapter.prototype.findOne = function(query, cb) {
+    return this.socket.emit(this._end_point('findOne'), query, cb);
+  };
+
   SocketAdapter.prototype.find = function(query, cb) {
     return this.socket.emit(this._end_point('find'), query, cb);
   };
@@ -6529,6 +6534,7 @@ RestAdapter = (function() {
     this.aggregate = __bind(this.aggregate, this);
     this.count = __bind(this.count, this);
     this.find = __bind(this.find, this);
+    this.findOne = __bind(this.findOne, this);
     this.remove = __bind(this.remove, this);
     this.update = __bind(this.update, this);
     this.create = __bind(this.create, this);
@@ -6593,6 +6599,23 @@ RestAdapter = (function() {
       success: function(data, textStatus, jqXHR) {
         cb(data.err);
         return _this.cursor_update();
+      }
+    });
+  };
+
+  RestAdapter.prototype.findOne = function(query, cb) {
+    var q,
+      _this = this;
+    q = json.stringify(query);
+    return ajax({
+      url: this._end_point('findOne'),
+      type: 'GET',
+      dataType: 'json',
+      data: {
+        query: q
+      },
+      success: function(data, textStatus, jqXHR) {
+        return cb(data.err, data.doc);
       }
     });
   };
@@ -6730,6 +6753,7 @@ Model = (function() {
     this.aggregate = __bind(this.aggregate, this);
     this.count = __bind(this.count, this);
     this.find = __bind(this.find, this);
+    this.findOne = __bind(this.findOne, this);
     this.remove = __bind(this.remove, this);
     this.update = __bind(this.update, this);
     this.create = __bind(this.create, this);
@@ -6835,6 +6859,30 @@ Model = (function() {
       }
       return _this._debug_error(err);
     });
+  };
+
+  Model.prototype.findOne = function(query, cb, cursor) {
+    var conditions, fields, options,
+      _this = this;
+    conditions = query.conditions;
+    fields = query.fields;
+    options = query.options;
+    if (cursor == null) {
+      cursor = new Cursor(this, 'findOne', query, cb);
+      this.cursors.push(cursor);
+    }
+    this.adapter.findOne(query, function(err, doc) {
+      cursor.last_err = err;
+      if (err) {
+        cursor.err.push(err);
+      }
+      cursor.val(doc);
+      if (cb) {
+        cb(err, doc);
+      }
+      return _this._debug_error(err, doc);
+    });
+    return cursor;
   };
 
   Model.prototype.find = function(query, cb, cursor) {

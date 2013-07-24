@@ -11,6 +11,7 @@ RestAdapter = (function() {
     this.aggregate = __bind(this.aggregate, this);
     this.count = __bind(this.count, this);
     this.find = __bind(this.find, this);
+    this.findOne = __bind(this.findOne, this);
     this.remove = __bind(this.remove, this);
     this.update = __bind(this.update, this);
     this.create = __bind(this.create, this);
@@ -75,6 +76,23 @@ RestAdapter = (function() {
       success: function(data, textStatus, jqXHR) {
         cb(data.err);
         return _this.cursor_update();
+      }
+    });
+  };
+
+  RestAdapter.prototype.findOne = function(query, cb) {
+    var q,
+      _this = this;
+    q = json.stringify(query);
+    return ajax({
+      url: this._end_point('findOne'),
+      type: 'GET',
+      dataType: 'json',
+      data: {
+        query: q
+      },
+      success: function(data, textStatus, jqXHR) {
+        return cb(data.err, data.doc);
       }
     });
   };

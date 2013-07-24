@@ -71,6 +71,23 @@ class RestAdapter
   #   fields: fields
   #   options: options
   # }
+  findOne: (query, cb)=>
+    q = json.stringify(query)
+    ajax {
+      url: @_end_point('findOne')
+      type: 'GET'
+      dataType: 'json'
+      data: {query: q}
+      success: (data, textStatus, jqXHR)=>
+        cb(data.err, data.doc)
+    }
+
+  # R
+  # query: {
+  #   conditions: conditions
+  #   fields: fields
+  #   options: options
+  # }
   find: (query, cb)=>
     q = json.stringify(query)
     ajax {

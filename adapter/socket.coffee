@@ -51,6 +51,15 @@ class SocketAdapter
   #   conditions: conditions
   #   fields: fields
   #   options: options
+  # }
+  findOne: (query, cb)=>
+    @socket.emit @_end_point('findOne'), query, cb
+
+  # R
+  # query: {
+  #   conditions: conditions
+  #   fields: fields
+  #   options: options
   #   page: page  -> warning: this field is not in the mongoose API!!
   # }
   find: (query, cb)=>

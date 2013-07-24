@@ -13,6 +13,7 @@ SocketAdapter = (function() {
     this.aggregate = __bind(this.aggregate, this);
     this.count = __bind(this.count, this);
     this.find = __bind(this.find, this);
+    this.findOne = __bind(this.findOne, this);
     this.remove = __bind(this.remove, this);
     this.update = __bind(this.update, this);
     this.create = __bind(this.create, this);
@@ -46,6 +47,10 @@ SocketAdapter = (function() {
 
   SocketAdapter.prototype.remove = function(query, cb) {
     return this.socket.emit(this._end_point('remove'), query, cb);
+  };
+
+  SocketAdapter.prototype.findOne = function(query, cb) {
+    return this.socket.emit(this._end_point('findOne'), query, cb);
   };
 
   SocketAdapter.prototype.find = function(query, cb) {
