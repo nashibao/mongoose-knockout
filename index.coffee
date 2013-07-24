@@ -136,6 +136,8 @@ class Model
       cursor = new Cursor(@, 'findOne', query, cb)
       @cursors.push(cursor)
     @adapter.findOne query, (err, doc)=>
+      if @map
+        doc = @map(doc)
       cursor.last_err = err
       if err
         cursor.err.push(err)

@@ -184,6 +184,9 @@ Model = (function() {
       this.cursors.push(cursor);
     }
     this.adapter.findOne(query, function(err, doc) {
+      if (_this.map) {
+        doc = _this.map(doc);
+      }
       cursor.last_err = err;
       if (err) {
         cursor.err.push(err);
