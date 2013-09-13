@@ -7,7 +7,7 @@
   "dependencies": {
     "ForbesLindesay/ajax": "*",
     "component/json": "*",
-    "bestiejs/lodash": "*"
+    "lodash/lodash": "*"
   },
   "development": {},
   "license": "MIT",
