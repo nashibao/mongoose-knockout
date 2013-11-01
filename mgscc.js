@@ -7559,7 +7559,7 @@ RestAdapter = (function() {
     this.create = __bind(this.create, this);
     this._end_point = __bind(this._end_point, this);
     this.initialize = __bind(this.initialize, this);
-    this.name_space = options.name_space || '';
+    this.name_space = (options != null ? options.name_space : void 0) || '';
     this.collection_name = options ? options.collection_name : void 0;
     this.cursor_update = void 0;
   }

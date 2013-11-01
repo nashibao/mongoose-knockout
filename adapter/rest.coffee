@@ -6,7 +6,7 @@ class RestAdapter
 
   constructor: (options)->
     # socket
-    @name_space = options.name_space || ''
+    @name_space = options?.name_space || ''
     @collection_name = if options then options.collection_name else undefined
     @cursor_update = undefined
 
