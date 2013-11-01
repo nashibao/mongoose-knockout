@@ -6,6 +6,7 @@ class RestAdapter
 
   constructor: (options)->
     # socket
+    @name_space = options.name_space || ''
     @collection_name = if options then options.collection_name else undefined
     @cursor_update = undefined
 
@@ -13,7 +14,11 @@ class RestAdapter
 
 
   _end_point: (name)=>
-    return '/api/' + @collection_name + '/' + name
+    pt = '/api/' + @collection_name + '/'
+    if @name_space
+      pt += @name_space + '/'
+    pt += name
+    return pt
 
   # C
   # query: {
