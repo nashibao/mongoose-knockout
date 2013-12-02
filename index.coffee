@@ -163,15 +163,16 @@ class Model
       cursor.last_err = err
       if err
         cursor.errors.push(err)
-      cursor.docs(docs)
-      cursor.page(options.page)
-      cursor.page_length(options.page_length)
-      cursor.limit(options.limit)
-      cursor.count(options.count)
-      # todo: mapping
-      for doc in docs
-        @_docs[doc["_id"]] = doc
-        cursor._docs[doc["_id"]] = doc
+      if not (docs==null)
+        cursor.docs(docs)
+        cursor.page(options.page)
+        cursor.page_length(options.page_length)
+        cursor.limit(options.limit)
+        cursor.count(options.count)
+        # todo: mapping
+        for doc in docs
+          @_docs[doc["_id"]] = doc
+          cursor._docs[doc["_id"]] = doc
       if cb
         cb(err, docs)
       @_debug_error(err, docs)
