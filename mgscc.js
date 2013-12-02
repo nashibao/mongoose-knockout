@@ -7905,7 +7905,7 @@ Model = (function() {
       }
       cursor.last_err = err;
       if (err) {
-        cursor.err.push(err);
+        cursor.errors.push(err);
       }
       cursor.val(doc);
       if (cb) {
@@ -7935,7 +7935,7 @@ Model = (function() {
       console.log('find', docs, err);
       cursor.last_err = err;
       if (err) {
-        cursor.err.push(err);
+        cursor.errors.push(err);
       }
       cursor.docs(docs);
       cursor.page(options.page);
@@ -7966,7 +7966,7 @@ Model = (function() {
     this.adapter.count(query, function(err, count) {
       cursor.last_err = err;
       if (err) {
-        cursor.err.push(err);
+        cursor.errors.push(err);
       }
       cursor.val(count);
       if (cb) {
@@ -7989,7 +7989,7 @@ Model = (function() {
       var doc, _i, _len;
       cursor.last_err = err;
       if (err) {
-        cursor.err.push(err);
+        cursor.errors.push(err);
       }
       cursor.docs(docs);
       if (docs.length > 0) {
@@ -8021,6 +8021,9 @@ exports.Cursor = Cursor;
 exports.Model = Model;
 
 });
+
+
+
 
 
 

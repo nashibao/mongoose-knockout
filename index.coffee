@@ -140,7 +140,7 @@ class Model
         doc = @map(doc)
       cursor.last_err = err
       if err
-        cursor.err.push(err)
+        cursor.errors.push(err)
       cursor.val(doc)
       if cb
         cb(err, doc)
@@ -162,7 +162,7 @@ class Model
       console.log 'find', docs, err
       cursor.last_err = err
       if err
-        cursor.err.push(err)
+        cursor.errors.push(err)
       cursor.docs(docs)
       cursor.page(options.page)
       cursor.page_length(options.page_length)
@@ -186,7 +186,7 @@ class Model
     @adapter.count query, (err, count)=>
       cursor.last_err = err
       if err
-        cursor.err.push(err)
+        cursor.errors.push(err)
       cursor.val(count)
       if cb
         cb(err, count)
@@ -202,7 +202,7 @@ class Model
     @adapter.aggregate query, (err, docs)=>
       cursor.last_err = err
       if err
-        cursor.err.push(err)
+        cursor.errors.push(err)
       cursor.docs(docs)
       if docs.length > 0
         cursor.val(docs[0])
