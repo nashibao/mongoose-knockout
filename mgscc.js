@@ -7993,16 +7993,18 @@ Model = (function() {
       if (err) {
         cursor.errors.push(err);
       }
-      cursor.docs(docs);
-      if (docs.length > 0) {
-        cursor.val(docs[0]);
-      } else {
-        cursor.val(false);
-      }
-      for (_i = 0, _len = docs.length; _i < _len; _i++) {
-        doc = docs[_i];
-        _this._docs[doc["_id"]] = doc;
-        cursor._docs[doc["_id"]] = doc;
+      if (!(docs === null)) {
+        cursor.docs(docs);
+        if (docs.length > 0) {
+          cursor.val(docs[0]);
+        } else {
+          cursor.val(false);
+        }
+        for (_i = 0, _len = docs.length; _i < _len; _i++) {
+          doc = docs[_i];
+          _this._docs[doc["_id"]] = doc;
+          cursor._docs[doc["_id"]] = doc;
+        }
       }
       if (cb) {
         cb(err, docs);
