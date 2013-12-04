@@ -18,6 +18,9 @@ class SocketAdapter
     @socket.on 'connect', ()=>
       console.log '-- connected --', @name_space
 
+    @socket.on 'disconnect', ()=>
+      console.log '-- disconnected --', @name_space
+
     # update
     @socket.on @_end_point('update'), (data)=>
       @cursor_update()

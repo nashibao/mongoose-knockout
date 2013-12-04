@@ -7499,6 +7499,9 @@ SocketAdapter = (function() {
     this.socket.on('connect', function() {
       return console.log('-- connected --', _this.name_space);
     });
+    this.socket.on('disconnect', function() {
+      return console.log('-- disconnected --', _this.name_space);
+    });
     return this.socket.on(this._end_point('update'), function(data) {
       return _this.cursor_update();
     });
