@@ -164,15 +164,15 @@ class Model
       if err
         cursor.errors.push(err)
       if not (docs==null)
+        # todo: mapping
+        for doc in docs
+          @_docs[doc["_id"]] = doc
+          cursor._docs[doc["_id"]] = doc
         cursor.docs(docs)
         cursor.page(options.page)
         cursor.page_length(options.page_length)
         cursor.limit(options.limit)
         cursor.count(options.count)
-        # todo: mapping
-        for doc in docs
-          @_docs[doc["_id"]] = doc
-          cursor._docs[doc["_id"]] = doc
       if cb
         cb(err, docs)
       @_debug_error(err, docs)
@@ -205,15 +205,15 @@ class Model
       if err
         cursor.errors.push(err)
       if not (docs==null)
+        # todo: mapping
+        for doc in docs
+          @_docs[doc["_id"]] = doc
+          cursor._docs[doc["_id"]] = doc
         cursor.docs(docs)
         if docs.length > 0
           cursor.val(docs[0])
         else
           cursor.val(false)
-        # todo: mapping
-        for doc in docs
-          @_docs[doc["_id"]] = doc
-          cursor._docs[doc["_id"]] = doc
       if cb
         cb(err, docs)
       @_debug_error(err, docs)
