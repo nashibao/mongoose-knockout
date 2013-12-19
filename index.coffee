@@ -31,6 +31,16 @@ class Cursor
 
     @cb = cb
 
+    @has_previous = co ()=>
+      if @page() > 0
+        return true
+      return false
+
+    @has_next = co ()=>
+      if @page() + 1 < @page_length()
+        return true
+      return false
+
   update: ()=>
     @api[@func_name](@query, @cb, @)
 

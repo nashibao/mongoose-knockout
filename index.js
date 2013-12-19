@@ -39,6 +39,18 @@ Cursor = (function() {
       return [];
     });
     this.cb = cb;
+    this.has_previous = co(function() {
+      if (_this.page() > 0) {
+        return true;
+      }
+      return false;
+    });
+    this.has_next = co(function() {
+      if (_this.page() + 1 < _this.page_length()) {
+        return true;
+      }
+      return false;
+    });
   }
 
   Cursor.prototype.update = function() {
