@@ -7,19 +7,27 @@ co = ko.computed
 
 class Cursor
   constructor: (api, func_name, query, cb)->
+
+    # caching ----
     @api = api
     @func_name = func_name
     @query = query
 
+    # result ----
+    # object
     @val = oo(false)
 
+    # array
     @docs = oa([])
+
+    # dictionary
     @_docs = {}
 
+    # errors ----
     @last_err = oo(false)
     @errors = oa([])
 
-    # paging
+    # paging ----
     @page = oo(0)
     @page_length = oo(0)
     @limit = oo(0)
@@ -29,8 +37,13 @@ class Cursor
         return [0..(@page_length()-1)]
       return []
 
+    # none -> loading -> loaded -> loading -> loaded
+    @status = oo('none')
+
+    # callback ----
     @cb = cb
 
+    # for paging apis ----
     @has_previous = co ()=>
       if @page() > 0
         return true
@@ -41,9 +54,14 @@ class Cursor
         return true
       return false
 
+  # re query
   update: ()=>
+    # prohibit multi requesting
+    if @status() == "loading"
+      return
     @api[@func_name](@query, @cb, @)
 
+  # load more
   more: ()=>
     if not @query.page?
       @query.page = 0
@@ -56,7 +74,6 @@ class Cursor
 class Model
 
   cursor_update: ()=>
-    console.log 'cursor_update'
     for cursor in @cursors
       cursor.update()
 
@@ -115,10 +132,6 @@ class Model
     if err
       console.log err
       @errors.push(err)
-    else
-      console.log 'success'
-      if options
-        console.log options
 
   create: (query, cb)=>
     if not @validate(query.doc)
@@ -153,6 +166,7 @@ class Model
     if not cursor?
       cursor = new Cursor(@, 'findOne', query, cb)
       @cursors.push(cursor)
+    cursor.status('loading')
     @adapter.findOne query, (err, doc)=>
       if @map
         doc = @map(doc)
@@ -160,6 +174,7 @@ class Model
       if err
         cursor.errors.push(err)
       cursor.val(doc)
+      cursor.status('loaded')
       if cb
         cb(err, doc)
       @_debug_error(err, doc)
@@ -175,10 +190,10 @@ class Model
     if not cursor?
       cursor = new Cursor(@, 'find', query, cb)
       @cursors.push(cursor)
+    cursor.status('loading')
     @adapter.find query, (err, docs, options)=>
       if @map
         docs = _.map(docs, @map)
-      console.log 'find', docs, err
       cursor.last_err = err
       if err
         cursor.errors.push(err)
@@ -195,6 +210,7 @@ class Model
         cursor.page_length(options.page_length)
         cursor.limit(options.limit)
         cursor.count(options.count)
+      cursor.status('loaded')
       if cb
         cb(err, docs)
       @_debug_error(err, docs)
@@ -206,11 +222,13 @@ class Model
     if not cursor?
       cursor = new Cursor(@, 'count', query, cb)
       @cursors.push(cursor)
+    cursor.status('loading')
     @adapter.count query, (err, count)=>
       cursor.last_err = err
       if err
         cursor.errors.push(err)
       cursor.val(count)
+      cursor.status('loaded')
       if cb
         cb(err, count)
       @_debug_error(err, count)
@@ -222,6 +240,7 @@ class Model
     if not cursor?
       cursor = new Cursor(@, 'aggregate', query, cb)
       @cursors.push(cursor)
+    cursor.status('loading')
     @adapter.aggregate query, (err, docs)=>
       cursor.last_err = err
       if err
@@ -236,6 +255,7 @@ class Model
           cursor.val(docs[0])
         else
           cursor.val(false)
+      cursor.status('loaded')
       if cb
         cb(err, docs)
       @_debug_error(err, docs)

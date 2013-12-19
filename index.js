@@ -38,6 +38,7 @@ Cursor = (function() {
       }
       return [];
     });
+    this.status = oo('none');
     this.cb = cb;
     this.has_previous = co(function() {
       if (_this.page() > 0) {
@@ -54,6 +55,9 @@ Cursor = (function() {
   }
 
   Cursor.prototype.update = function() {
+    if (this.status() === "loading") {
+      return;
+    }
     return this.api[this.func_name](this.query, this.cb, this);
   };
 
@@ -73,7 +77,6 @@ Cursor = (function() {
 Model = (function() {
   Model.prototype.cursor_update = function() {
     var cursor, _i, _len, _ref, _results;
-    console.log('cursor_update');
     _ref = this.cursors;
     _results = [];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -148,11 +151,6 @@ Model = (function() {
     if (err) {
       console.log(err);
       return this.errors.push(err);
-    } else {
-      console.log('success');
-      if (options) {
-        return console.log(options);
-      }
     }
   };
 
@@ -206,6 +204,7 @@ Model = (function() {
       cursor = new Cursor(this, 'findOne', query, cb);
       this.cursors.push(cursor);
     }
+    cursor.status('loading');
     this.adapter.findOne(query, function(err, doc) {
       if (_this.map) {
         doc = _this.map(doc);
@@ -215,6 +214,7 @@ Model = (function() {
         cursor.errors.push(err);
       }
       cursor.val(doc);
+      cursor.status('loaded');
       if (cb) {
         cb(err, doc);
       }
@@ -235,12 +235,12 @@ Model = (function() {
       cursor = new Cursor(this, 'find', query, cb);
       this.cursors.push(cursor);
     }
+    cursor.status('loading');
     this.adapter.find(query, function(err, docs, options) {
       var doc, _i, _len;
       if (_this.map) {
         docs = _.map(docs, _this.map);
       }
-      console.log('find', docs, err);
       cursor.last_err = err;
       if (err) {
         cursor.errors.push(err);
@@ -262,6 +262,7 @@ Model = (function() {
         cursor.limit(options.limit);
         cursor.count(options.count);
       }
+      cursor.status('loaded');
       if (cb) {
         cb(err, docs);
       }
@@ -278,12 +279,14 @@ Model = (function() {
       cursor = new Cursor(this, 'count', query, cb);
       this.cursors.push(cursor);
     }
+    cursor.status('loading');
     this.adapter.count(query, function(err, count) {
       cursor.last_err = err;
       if (err) {
         cursor.errors.push(err);
       }
       cursor.val(count);
+      cursor.status('loaded');
       if (cb) {
         cb(err, count);
       }
@@ -300,6 +303,7 @@ Model = (function() {
       cursor = new Cursor(this, 'aggregate', query, cb);
       this.cursors.push(cursor);
     }
+    cursor.status('loading');
     this.adapter.aggregate(query, function(err, docs) {
       var doc, _i, _len;
       cursor.last_err = err;
@@ -319,6 +323,7 @@ Model = (function() {
           cursor.val(false);
         }
       }
+      cursor.status('loaded');
       if (cb) {
         cb(err, docs);
       }
