@@ -12,6 +12,7 @@ co = ko.computed;
 
 Cursor = (function() {
   function Cursor(api, func_name, query, cb) {
+    this.more = __bind(this.more, this);
     this.update = __bind(this.update, this);
     var _this = this;
     this.api = api;
@@ -42,6 +43,15 @@ Cursor = (function() {
 
   Cursor.prototype.update = function() {
     return this.api[this.func_name](this.query, this.cb, this);
+  };
+
+  Cursor.prototype.more = function() {
+    if (this.query.page == null) {
+      this.query.page = 0;
+    }
+    this.query.page += 1;
+    this.query.more = true;
+    return this.update();
   };
 
   return Cursor;
@@ -202,12 +212,13 @@ Model = (function() {
   };
 
   Model.prototype.find = function(query, cb, cursor) {
-    var conditions, fields, options, page,
+    var conditions, fields, more, options, page,
       _this = this;
     conditions = query.conditions;
     fields = query.fields;
     options = query.options;
     page = query.page;
+    more = query.more || false;
     if (cursor == null) {
       cursor = new Cursor(this, 'find', query, cb);
       this.cursors.push(cursor);
@@ -227,8 +238,13 @@ Model = (function() {
           doc = docs[_i];
           _this._docs[doc["_id"]] = doc;
           cursor._docs[doc["_id"]] = doc;
+          if (more) {
+            cursor.docs.push(doc);
+          }
         }
-        cursor.docs(docs);
+        if (!more) {
+          cursor.docs(docs);
+        }
         cursor.page(options.page);
         cursor.page_length(options.page_length);
         cursor.limit(options.limit);

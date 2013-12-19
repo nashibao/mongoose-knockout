@@ -34,6 +34,14 @@ class Cursor
   update: ()=>
     @api[@func_name](@query, @cb, @)
 
+  more: ()=>
+    if not @query.page?
+      @query.page = 0
+    @query.page += 1
+    @query.more = true
+    @update()
+
+
 
 class Model
 
@@ -153,6 +161,7 @@ class Model
     fields = query.fields
     options = query.options
     page = query.page
+    more = query.more || false
     if not cursor?
       cursor = new Cursor(@, 'find', query, cb)
       @cursors.push(cursor)
@@ -168,7 +177,10 @@ class Model
         for doc in docs
           @_docs[doc["_id"]] = doc
           cursor._docs[doc["_id"]] = doc
-        cursor.docs(docs)
+          if more
+            cursor.docs.push(doc)
+        if not more
+          cursor.docs(docs)
         cursor.page(options.page)
         cursor.page_length(options.page_length)
         cursor.limit(options.limit)
