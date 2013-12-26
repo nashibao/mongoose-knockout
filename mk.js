@@ -7810,6 +7810,9 @@ Cursor = (function() {
 Model = (function() {
   Model.prototype.cursor_update = function(data) {
     var cursor, _i, _len, _ref, _results;
+    if (data == null) {
+      data = {};
+    }
     if (data.method === 'notified') {
       if (this.notified) {
         this.notified();

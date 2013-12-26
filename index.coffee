@@ -80,7 +80,7 @@ class Cursor
 
 
 class Model
-  cursor_update: (data)=>
+  cursor_update: (data={})=>
     if data.method == 'notified'
       if @notified
         @notified()
