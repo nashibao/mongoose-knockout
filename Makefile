@@ -8,7 +8,7 @@ build: components index.coffee
 	@component build --dev
 
 install: components build/build.js
-	 component build --standalone mgscc --out . --name mgscc
+	 component build --standalone mk --out . --name mk
 
 components: component.json
 	@component install --dev

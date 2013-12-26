@@ -22,8 +22,9 @@ class SocketAdapter
       console.log '-- disconnected --', @name_space
 
     # update
+    # 単純に再読み込みしている
     @socket.on @_end_point('update'), (data)=>
-      @cursor_update()
+      @cursor_update(data)
 
 
   # C

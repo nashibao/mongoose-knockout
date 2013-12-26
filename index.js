@@ -11,11 +11,12 @@ oa = ko.observableArray;
 co = ko.computed;
 
 Cursor = (function() {
-  function Cursor(api, func_name, query, cb) {
-    this.more = __bind(this.more, this);
+  function Cursor(model, func_name, query, cb) {
+    this.head = __bind(this.head, this);
+    this.tail = __bind(this.tail, this);
     this.update = __bind(this.update, this);
     var _this = this;
-    this.api = api;
+    this.model = model;
     this.func_name = func_name;
     this.query = query;
     this.val = oo(false);
@@ -52,22 +53,36 @@ Cursor = (function() {
       }
       return false;
     });
+    this.more = false;
   }
 
-  Cursor.prototype.update = function() {
+  Cursor.prototype.update = function(options) {
+    if (options == null) {
+      options = {};
+    }
     if (this.status() === "loading") {
       return;
     }
-    return this.api[this.func_name](this.query, this.cb, this);
+    return this.model[this.func_name](this.query, options, this.cb, this);
   };
 
-  Cursor.prototype.more = function() {
+  Cursor.prototype.tail = function() {
     if (this.query.page == null) {
       this.query.page = 0;
     }
     this.query.page += 1;
-    this.query.more = true;
-    return this.update();
+    this.more = 2;
+    return this.update({
+      more: this.more
+    });
+  };
+
+  Cursor.prototype.head = function() {
+    this.more = 1;
+    return this.update({
+      more: this.more,
+      page: 0
+    });
   };
 
   return Cursor;
@@ -75,8 +90,14 @@ Cursor = (function() {
 })();
 
 Model = (function() {
-  Model.prototype.cursor_update = function() {
+  Model.prototype.cursor_update = function(data) {
     var cursor, _i, _len, _ref, _results;
+    if (data.method === 'notified') {
+      if (this.notified) {
+        this.notified();
+      }
+      return;
+    }
     _ref = this.cursors;
     _results = [];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -111,6 +132,7 @@ Model = (function() {
     this.last_validate_err = oo(false);
     this.validate_errors = oa([]);
     this.map = options.map || false;
+    this.notified = options.notified || false;
   }
 
   Model.prototype.validate = function(doc) {
@@ -154,7 +176,7 @@ Model = (function() {
     }
   };
 
-  Model.prototype.create = function(query, cb) {
+  Model.prototype.create = function(query, temp_options, cb) {
     var _this = this;
     if (!this.validate(query.doc)) {
       if (cb) {
@@ -171,7 +193,7 @@ Model = (function() {
     return true;
   };
 
-  Model.prototype.update = function(query, cb) {
+  Model.prototype.update = function(query, temp_options, cb) {
     var _this = this;
     if (query.update) {
       delete query.update["_id"];
@@ -184,7 +206,7 @@ Model = (function() {
     });
   };
 
-  Model.prototype.remove = function(query, cb) {
+  Model.prototype.remove = function(query, temp_options, cb) {
     var _this = this;
     return this.adapter.remove(query, function(err) {
       if (cb) {
@@ -194,7 +216,7 @@ Model = (function() {
     });
   };
 
-  Model.prototype.findOne = function(query, cb, cursor) {
+  Model.prototype.findOne = function(query, temp_options, cb, cursor) {
     var conditions, fields, options,
       _this = this;
     conditions = query.conditions;
@@ -223,21 +245,26 @@ Model = (function() {
     return cursor;
   };
 
-  Model.prototype.find = function(query, cb, cursor) {
+  Model.prototype.find = function(query, temp_options, cb, cursor) {
     var conditions, fields, more, options, page,
       _this = this;
+    temp_options = temp_options || {};
     conditions = query.conditions;
     fields = query.fields;
     options = query.options;
     page = query.page;
-    more = query.more || false;
+    if (temp_options.page != null) {
+      page = temp_options.page;
+    }
+    console.log('page=', page);
+    more = temp_options.more || false;
     if (cursor == null) {
       cursor = new Cursor(this, 'find', query, cb);
       this.cursors.push(cursor);
     }
     cursor.status('loading');
     this.adapter.find(query, function(err, docs, options) {
-      var doc, _i, _len;
+      var already, doc, _i, _len;
       if (_this.map) {
         docs = _.map(docs, _this.map);
       }
@@ -246,12 +273,28 @@ Model = (function() {
         cursor.errors.push(err);
       }
       if (!(docs === null)) {
+        if (!more) {
+          _this._docs = {};
+          cursor._docs = {};
+        }
         for (_i = 0, _len = docs.length; _i < _len; _i++) {
           doc = docs[_i];
+          already = false;
+          if (doc["_id"] in _this._docs) {
+            already = true;
+          }
           _this._docs[doc["_id"]] = doc;
           cursor._docs[doc["_id"]] = doc;
           if (more) {
-            cursor.docs.push(doc);
+            if (!already) {
+              switch (more) {
+                case 1:
+                  cursor.docs.shift(doc);
+                  break;
+                case 2:
+                  cursor.docs.push(doc);
+              }
+            }
           }
         }
         if (!more) {
@@ -271,7 +314,7 @@ Model = (function() {
     return cursor;
   };
 
-  Model.prototype.count = function(query, cb, cursor) {
+  Model.prototype.count = function(query, temp_options, cb, cursor) {
     var conditions,
       _this = this;
     conditions = query.conditions;
@@ -295,7 +338,7 @@ Model = (function() {
     return cursor;
   };
 
-  Model.prototype.aggregate = function(query, cb, cursor) {
+  Model.prototype.aggregate = function(query, temp_options, cb, cursor) {
     var array,
       _this = this;
     array = query.array;

@@ -6,10 +6,10 @@ oa = ko.observableArray
 co = ko.computed
 
 class Cursor
-  constructor: (api, func_name, query, cb)->
+  constructor: (model, func_name, query, cb)->
 
     # caching ----
-    @api = api
+    @model = model
     @func_name = func_name
     @query = query
 
@@ -54,26 +54,37 @@ class Cursor
         return true
       return false
 
+    # updateの方法
+    @more = false
+
   # re query
-  update: ()=>
+  update: (options={})=>
     # prohibit multi requesting
     if @status() == "loading"
       return
-    @api[@func_name](@query, @cb, @)
+    @model[@func_name](@query, options, @cb, @)
 
-  # load more
-  more: ()=>
+  # 後ろにくっつける
+  tail: ()=>
     if not @query.page?
       @query.page = 0
     @query.page += 1
-    @query.more = true
-    @update()
+    @more = 2
+    @update({more: @more})
+
+  # 頭にくっつける
+  head: ()=>
+    @more = 1
+    @update({more: @more, page: 0})
 
 
 
 class Model
-
-  cursor_update: ()=>
+  cursor_update: (data)=>
+    if data.method == 'notified'
+      if @notified
+        @notified()
+      return
     for cursor in @cursors
       cursor.update()
 
@@ -105,6 +116,8 @@ class Model
 
     @map = options.map || false
 
+    @notified = options.notified || false
+
   # todo: update validation
   validate: (doc)=>
     for key of @model
@@ -133,7 +146,7 @@ class Model
       console.log err
       @errors.push(err)
 
-  create: (query, cb)=>
+  create: (query, temp_options, cb)=>
     if not @validate(query.doc)
       if cb
         cb(@last_validate_err())
@@ -144,7 +157,7 @@ class Model
       @_debug_error(err)
     return true
 
-  update: (query, cb)=>
+  update: (query, temp_options, cb)=>
     if query.update
       delete query.update["_id"]
     @adapter.update query, (err)=>
@@ -152,14 +165,14 @@ class Model
         cb(err)
       @_debug_error(err)
 
-  remove: (query, cb)=>
+  remove: (query, temp_options, cb)=>
     @adapter.remove query, (err)=>
       if cb
         cb(err)
       @_debug_error(err)
 
   # R
-  findOne: (query, cb, cursor)=>
+  findOne: (query, temp_options, cb, cursor)=>
     conditions = query.conditions
     fields = query.fields
     options = query.options
@@ -181,12 +194,16 @@ class Model
     return cursor
 
   # R
-  find: (query, cb, cursor)=>
+  find: (query, temp_options, cb, cursor)=>
+    temp_options = temp_options || {}
     conditions = query.conditions
     fields = query.fields
     options = query.options
     page = query.page
-    more = query.more || false
+    if temp_options.page?
+      page = temp_options.page
+    console.log 'page=', page
+    more = temp_options.more || false
     if not cursor?
       cursor = new Cursor(@, 'find', query, cb)
       @cursors.push(cursor)
@@ -198,12 +215,21 @@ class Model
       if err
         cursor.errors.push(err)
       if not (docs==null)
+        if not more
+          @_docs = {}
+          cursor._docs = {}
         # todo: mapping
         for doc in docs
+          already = false
+          if doc["_id"] of @_docs
+            already = true
           @_docs[doc["_id"]] = doc
           cursor._docs[doc["_id"]] = doc
           if more
-            cursor.docs.push(doc)
+            if not already
+              switch more
+                when 1 then cursor.docs.shift(doc)
+                when 2 then cursor.docs.push(doc)
         if not more
           cursor.docs(docs)
         cursor.page(options.page)
@@ -217,7 +243,7 @@ class Model
     return cursor
 
   # count
-  count: (query, cb, cursor)=>
+  count: (query, temp_options, cb, cursor)=>
     conditions = query.conditions
     if not cursor?
       cursor = new Cursor(@, 'count', query, cb)
@@ -235,7 +261,7 @@ class Model
     return cursor
 
   # count
-  aggregate: (query, cb, cursor)=>
+  aggregate: (query, temp_options, cb, cursor)=>
     array = query.array
     if not cursor?
       cursor = new Cursor(@, 'aggregate', query, cb)
