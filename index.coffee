@@ -214,7 +214,7 @@ class Model
       cursor.last_err = err
       if err
         cursor.errors.push(err)
-      if not (docs==null)
+      if docs?
         if not more
           @_docs = {}
           cursor._docs = {}
@@ -271,7 +271,7 @@ class Model
       cursor.last_err = err
       if err
         cursor.errors.push(err)
-      if not (docs==null)
+      if docs?
         # todo: mapping
         for doc in docs
           @_docs[doc["_id"]] = doc

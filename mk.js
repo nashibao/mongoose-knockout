@@ -7993,7 +7993,7 @@ Model = (function() {
       if (err) {
         cursor.errors.push(err);
       }
-      if (!(docs === null)) {
+      if (docs != null) {
         if (!more) {
           _this._docs = {};
           cursor._docs = {};
@@ -8074,7 +8074,7 @@ Model = (function() {
       if (err) {
         cursor.errors.push(err);
       }
-      if (!(docs === null)) {
+      if (docs != null) {
         for (_i = 0, _len = docs.length; _i < _len; _i++) {
           doc = docs[_i];
           _this._docs[doc["_id"]] = doc;
