@@ -202,7 +202,6 @@ class Model
     page = query.page
     if temp_options.page?
       page = temp_options.page
-    console.log 'page=', page
     more = temp_options.more || false
     if not cursor?
       cursor = new Cursor(@, 'find', query, cb)

@@ -7977,7 +7977,6 @@ Model = (function() {
     if (temp_options.page != null) {
       page = temp_options.page;
     }
-    console.log('page=', page);
     more = temp_options.more || false;
     if (cursor == null) {
       cursor = new Cursor(this, 'find', query, cb);
