@@ -228,7 +228,7 @@ class Model
           if more
             if not already
               switch more
-                when 1 then cursor.docs.shift(doc)
+                when 1 then cursor.docs.unshift(doc)
                 when 2 then cursor.docs.push(doc)
         if not more
           cursor.docs(docs)

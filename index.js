@@ -292,7 +292,7 @@ Model = (function() {
             if (!already) {
               switch (more) {
                 case 1:
-                  cursor.docs.shift(doc);
+                  cursor.docs.unshift(doc);
                   break;
                 case 2:
                   cursor.docs.push(doc);
