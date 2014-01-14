@@ -83,10 +83,27 @@ class Model
   cursor_update: (data={})=>
     if data.method == 'notified'
       if @notified
-        @notified()
+        @notified(data)
+      for cursor in @cursors
+        if cursor.notified
+          cursor.notified(data)
+      return
+    # updateの場合だけ、一部書き換えで済ませる
+    if data.method == 'update'
+      for cursor in @cursors
+        if cursor.func_name == 'findOne' or cursor.func_name == 'find'
+          if data.doc._id of cursor._docs
+            @remap(cursor._docs[data.doc._id], data.doc)
       return
     for cursor in @cursors
       cursor.update()
+
+  remap: (doc, data)=>
+    for key of data
+      if _.isFunction(doc[key])
+        doc[key](data[key])
+      else
+        doc[key] = data[key]
 
   constructor: (options)->
     @name_space = options.name_space
@@ -195,6 +212,7 @@ class Model
 
   # R
   find: (query, temp_options, cb, cursor)=>
+    console.log 'find!!'
     temp_options = temp_options || {}
     conditions = query.conditions
     fields = query.fields
@@ -214,6 +232,7 @@ class Model
       if err
         cursor.errors.push(err)
       if docs?
+        # 一度全削除してから入れなおしている
         if not more
           @_docs = {}
           cursor._docs = {}

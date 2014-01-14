@@ -91,21 +91,53 @@ Cursor = (function() {
 
 Model = (function() {
   Model.prototype.cursor_update = function(data) {
-    var cursor, _i, _len, _ref, _results;
+    var cursor, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _results;
     if (data == null) {
       data = {};
     }
     if (data.method === 'notified') {
       if (this.notified) {
-        this.notified();
+        this.notified(data);
+      }
+      _ref = this.cursors;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        cursor = _ref[_i];
+        if (cursor.notified) {
+          cursor.notified(data);
+        }
       }
       return;
     }
-    _ref = this.cursors;
+    if (data.method === 'update') {
+      _ref1 = this.cursors;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        cursor = _ref1[_j];
+        if (cursor.func_name === 'findOne' || cursor.func_name === 'find') {
+          if (data.doc._id in cursor._docs) {
+            this.remap(cursor._docs[data.doc._id], data.doc);
+          }
+        }
+      }
+      return;
+    }
+    _ref2 = this.cursors;
     _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      cursor = _ref[_i];
+    for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+      cursor = _ref2[_k];
       _results.push(cursor.update());
+    }
+    return _results;
+  };
+
+  Model.prototype.remap = function(doc, data) {
+    var key, _results;
+    _results = [];
+    for (key in data) {
+      if (_.isFunction(doc[key])) {
+        _results.push(doc[key](data[key]));
+      } else {
+        _results.push(doc[key] = data[key]);
+      }
     }
     return _results;
   };
@@ -120,6 +152,7 @@ Model = (function() {
     this.create = __bind(this.create, this);
     this._debug_error = __bind(this._debug_error, this);
     this.validate = __bind(this.validate, this);
+    this.remap = __bind(this.remap, this);
     this.cursor_update = __bind(this.cursor_update, this);
     this.name_space = options.name_space;
     this.collection_name = options.collection_name;
@@ -251,6 +284,7 @@ Model = (function() {
   Model.prototype.find = function(query, temp_options, cb, cursor) {
     var conditions, fields, more, options, page,
       _this = this;
+    console.log('find!!');
     temp_options = temp_options || {};
     conditions = query.conditions;
     fields = query.fields;
