@@ -94,11 +94,14 @@ class Model
         if cursor.func_name == 'findOne' or cursor.func_name == 'find'
           if data.doc._id of cursor._docs
             @remap(cursor._docs[data.doc._id], data.doc)
+        else
+          cursor.update()
       return
     for cursor in @cursors
       cursor.update()
 
   remap: (doc, data)=>
+    console.log 'remap', doc, data
     for key of data
       if _.isFunction(doc[key])
         doc[key](data[key])
@@ -212,7 +215,6 @@ class Model
 
   # R
   find: (query, temp_options, cb, cursor)=>
-    console.log 'find!!'
     temp_options = temp_options || {}
     conditions = query.conditions
     fields = query.fields

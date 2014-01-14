@@ -7834,6 +7834,8 @@ Model = (function() {
           if (data.doc._id in cursor._docs) {
             this.remap(cursor._docs[data.doc._id], data.doc);
           }
+        } else {
+          cursor.update();
         }
       }
       return;
@@ -7849,6 +7851,7 @@ Model = (function() {
 
   Model.prototype.remap = function(doc, data) {
     var key, _results;
+    console.log('remap', doc, data);
     _results = [];
     for (key in data) {
       if (_.isFunction(doc[key])) {
@@ -8002,7 +8005,6 @@ Model = (function() {
   Model.prototype.find = function(query, temp_options, cb, cursor) {
     var conditions, fields, more, options, page,
       _this = this;
-    console.log('find!!');
     temp_options = temp_options || {};
     conditions = query.conditions;
     fields = query.fields;
