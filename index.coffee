@@ -93,6 +93,8 @@ class Model
       for cursor in @cursors
         if cursor.func_name == 'findOne' or cursor.func_name == 'find'
           if data.doc._id of cursor._docs
+            if @pre
+              @pre(data.doc)
             @remap(cursor._docs[data.doc._id], data.doc)
         else
           cursor.update()
@@ -134,6 +136,18 @@ class Model
     @validate_errors = oa([])
 
     @map = options.map || false
+    @pre = options.pre || false
+    @post = options.post || false
+
+    @_map = (node)=>
+      if @pre
+        @pre(node)
+      if @map
+        node = @map(node)
+      if @post
+        @post(node)
+      return node
+
 
     @notified = options.notified || false
 
@@ -200,8 +214,7 @@ class Model
       @cursors.push(cursor)
     cursor.status('loading')
     @adapter.findOne query, (err, doc)=>
-      if @map
-        doc = @map(doc)
+      doc = @_map(doc)
       cursor.last_err = err
       if err
         cursor.errors.push(err)
@@ -228,8 +241,7 @@ class Model
       @cursors.push(cursor)
     cursor.status('loading')
     @adapter.find query, (err, docs, options)=>
-      if @map
-        docs = _.map(docs, @map)
+      docs = _.map(docs, @_map)
       cursor.last_err = err
       if err
         cursor.errors.push(err)

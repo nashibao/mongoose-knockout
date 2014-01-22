@@ -7832,6 +7832,9 @@ Model = (function() {
         cursor = _ref1[_j];
         if (cursor.func_name === 'findOne' || cursor.func_name === 'find') {
           if (data.doc._id in cursor._docs) {
+            if (this.pre) {
+              this.pre(data.doc);
+            }
             this.remap(cursor._docs[data.doc._id], data.doc);
           }
         } else {
@@ -7874,6 +7877,7 @@ Model = (function() {
     this.validate = __bind(this.validate, this);
     this.remap = __bind(this.remap, this);
     this.cursor_update = __bind(this.cursor_update, this);
+    var _this = this;
     this.name_space = options.name_space;
     this.collection_name = options.collection_name;
     this.model = options.model;
@@ -7888,6 +7892,20 @@ Model = (function() {
     this.last_validate_err = oo(false);
     this.validate_errors = oa([]);
     this.map = options.map || false;
+    this.pre = options.pre || false;
+    this.post = options.post || false;
+    this._map = function(node) {
+      if (_this.pre) {
+        _this.pre(node);
+      }
+      if (_this.map) {
+        node = _this.map(node);
+      }
+      if (_this.post) {
+        _this.post(node);
+      }
+      return node;
+    };
     this.notified = options.notified || false;
   }
 
@@ -7984,9 +8002,7 @@ Model = (function() {
     }
     cursor.status('loading');
     this.adapter.findOne(query, function(err, doc) {
-      if (_this.map) {
-        doc = _this.map(doc);
-      }
+      doc = _this._map(doc);
       cursor.last_err = err;
       if (err) {
         cursor.errors.push(err);
@@ -8021,9 +8037,7 @@ Model = (function() {
     cursor.status('loading');
     this.adapter.find(query, function(err, docs, options) {
       var already, doc, _i, _len;
-      if (_this.map) {
-        docs = _.map(docs, _this.map);
-      }
+      docs = _.map(docs, _this._map);
       cursor.last_err = err;
       if (err) {
         cursor.errors.push(err);
