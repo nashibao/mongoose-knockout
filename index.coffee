@@ -92,7 +92,6 @@ class Model
     if data.method == 'update'
       for cursor in @cursors
         if cursor.func_name == 'findOne' or cursor.func_name == 'find'
-          console.log 'ここや', data.doc
           if data.doc._id of cursor._docs
             @remap(cursor._docs[data.doc._id], data.doc)
         else
@@ -102,7 +101,6 @@ class Model
       cursor.update()
 
   remap: (doc, data)=>
-    console.log 'remap', doc, data
     for key of data
       if _.isFunction(doc[key])
         doc[key](data[key])

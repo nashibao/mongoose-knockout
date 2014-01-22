@@ -113,7 +113,6 @@ Model = (function() {
       for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
         cursor = _ref1[_j];
         if (cursor.func_name === 'findOne' || cursor.func_name === 'find') {
-          console.log('ここや', data.doc);
           if (data.doc._id in cursor._docs) {
             this.remap(cursor._docs[data.doc._id], data.doc);
           }
@@ -134,7 +133,6 @@ Model = (function() {
 
   Model.prototype.remap = function(doc, data) {
     var key, _results;
-    console.log('remap', doc, data);
     _results = [];
     for (key in data) {
       if (_.isFunction(doc[key])) {
