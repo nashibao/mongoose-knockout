@@ -201,7 +201,6 @@ require.relative = function(parent) {
   return localRequire;
 };
 require.register("component-type/index.js", function(exports, require, module){
-
 /**
  * toString ref.
  */
@@ -218,20 +217,19 @@ var toString = Object.prototype.toString;
 
 module.exports = function(val){
   switch (toString.call(val)) {
-    case '[object Function]': return 'function';
     case '[object Date]': return 'date';
     case '[object RegExp]': return 'regexp';
     case '[object Arguments]': return 'arguments';
     case '[object Array]': return 'array';
-    case '[object String]': return 'string';
+    case '[object Error]': return 'error';
   }
 
   if (val === null) return 'null';
   if (val === undefined) return 'undefined';
+  if (val !== val) return 'nan';
   if (val && val.nodeType === 1) return 'element';
-  if (val === Object(val)) return 'object';
 
-  return typeof val;
+  return typeof val.valueOf();
 };
 
 });
@@ -541,7 +539,7 @@ module.exports = require('./dist/lodash.compat.js');
 require.register("lodash-lodash/dist/lodash.compat.js", function(exports, require, module){
 /**
  * @license
- * Lo-Dash 2.2.1 (Custom Build) <http://lodash.com/>
+ * Lo-Dash 2.2.0 (Custom Build) <http://lodash.com/>
  * Build: `lodash -o ./dist/lodash.compat.js`
  * Copyright 2012-2013 The Dojo Foundation <http://dojofoundation.org/>
  * Based on Underscore.js 1.5.2 <http://underscorejs.org/LICENSE>
@@ -933,6 +931,15 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
   }
 
   /**
+   * A no-operation function.
+   *
+   * @private
+   */
+  function noop() {
+    // no operation performed
+  }
+
+  /**
    * Releases the given array back to the array pool.
    *
    * @private
@@ -1037,14 +1044,11 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
     /** Used to restore the original `_` reference in `noConflict` */
     var oldDash = context._;
 
-    /** Used to resolve the internal [[Class]] of values */
-    var toString = objectProto.toString;
-
     /** Used to detect if a method is native */
     var reNative = RegExp('^' +
-      String(toString)
+      String(objectProto.valueOf)
         .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-        .replace(/toString| for [^\]]+/g, '.*?') + '$'
+        .replace(/valueOf|for [^\]]+/g, '.+?') + '$'
     );
 
     /** Native method shortcuts */
@@ -1057,16 +1061,13 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
         now = reNative.test(now = Date.now) && now || function() { return +new Date; },
         push = arrayRef.push,
         propertyIsEnumerable = objectProto.propertyIsEnumerable,
+        setImmediate = context.setImmediate,
         setTimeout = context.setTimeout,
-        splice = arrayRef.splice;
+        splice = arrayRef.splice,
+        toString = objectProto.toString,
+        unshift = arrayRef.unshift;
 
-    /** Used to detect `setImmediate` in Node.js */
-    var setImmediate = typeof (setImmediate = freeGlobal && moduleExports && freeGlobal.setImmediate) == 'function' &&
-      !reNative.test(setImmediate) && setImmediate;
-
-    /** Used to set meta data on functions */
     var defineProperty = (function() {
-      // IE 8 only accepts DOM elements
       try {
         var o = {},
             func = reNative.test(func = Object.defineProperty) && func,
@@ -1076,7 +1077,8 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
     }());
 
     /* Native method shortcuts for methods with the same name as other `lodash` methods */
-    var nativeCreate = reNative.test(nativeCreate = Object.create) && nativeCreate,
+    var nativeBind = reNative.test(nativeBind = toString.bind) && nativeBind,
+        nativeCreate = reNative.test(nativeCreate = Object.create) && nativeCreate,
         nativeIsArray = reNative.test(nativeIsArray = Array.isArray) && nativeIsArray,
         nativeIsFinite = context.isFinite,
         nativeIsNaN = context.isNaN,
@@ -1084,7 +1086,12 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
         nativeMax = Math.max,
         nativeMin = Math.min,
         nativeParseInt = context.parseInt,
-        nativeRandom = Math.random;
+        nativeRandom = Math.random,
+        nativeSlice = arrayRef.slice;
+
+    /** Detect various environments */
+    var isIeOpera = reNative.test(context.attachEvent),
+        isV8 = nativeBind && !/\n|true/.test(nativeBind + isIeOpera);
 
     /** Used to lookup a built-in constructor by [[Class]] */
     var ctorByClass = {};
@@ -1119,8 +1126,8 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
     /*--------------------------------------------------------------------------*/
 
     /**
-     * Creates a `lodash` object which wraps the given value to enable intuitive
-     * method chaining.
+     * Creates a `lodash` object which wraps the given value to enable method
+     * chaining.
      *
      * In addition to Lo-Dash methods, wrappers also have the following `Array` methods:
      * `concat`, `join`, `pop`, `push`, `reverse`, `shift`, `slice`, `sort`, `splice`,
@@ -1131,16 +1138,15 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      *
      * The chainable wrapper functions are:
      * `after`, `assign`, `bind`, `bindAll`, `bindKey`, `chain`, `compact`,
-     * `compose`, `concat`, `countBy`, `create`, `createCallback`, `curry`,
-     * `debounce`, `defaults`, `defer`, `delay`, `difference`, `filter`, `flatten`,
-     * `forEach`, `forEachRight`, `forIn`, `forInRight`, `forOwn`, `forOwnRight`,
-     * `functions`, `groupBy`, `indexBy`, `initial`, `intersection`, `invert`,
-     * `invoke`, `keys`, `map`, `max`, `memoize`, `merge`, `min`, `object`, `omit`,
-     * `once`, `pairs`, `partial`, `partialRight`, `pick`, `pluck`, `pull`, `push`,
-     * `range`, `reject`, `remove`, `rest`, `reverse`, `shuffle`, `slice`, `sort`,
-     * `sortBy`, `splice`, `tap`, `throttle`, `times`, `toArray`, `transform`,
-     * `union`, `uniq`, `unshift`, `unzip`, `values`, `where`, `without`, `wrap`,
-     * and `zip`
+     * `compose`, `concat`, `countBy`, `createCallback`, `curry`, `debounce`,
+     * `defaults`, `defer`, `delay`, `difference`, `filter`, `flatten`, `forEach`,
+     * `forEachRight`, `forIn`, `forInRight`, `forOwn`, `forOwnRight`, `functions`,
+     * `groupBy`, `indexBy`, `initial`, `intersection`, `invert`, `invoke`, `keys`,
+     * `map`, `max`, `memoize`, `merge`, `min`, `object`, `omit`, `once`, `pairs`,
+     * `partial`, `partialRight`, `pick`, `pluck`, `pull`, `push`, `range`, `reject`,
+     * `remove`, `rest`, `reverse`, `shuffle`, `slice`, `sort`, `sortBy`, `splice`,
+     * `tap`, `throttle`, `times`, `toArray`, `transform`, `union`, `uniq`, `unshift`,
+     * `unzip`, `values`, `where`, `without`, `wrap`, and `zip`
      *
      * The non-chainable wrapper functions are:
      * `clone`, `cloneDeep`, `contains`, `escape`, `every`, `find`, `findIndex`,
@@ -1154,8 +1160,6 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      *
      * The wrapper functions `first` and `last` return wrapped values when `n` is
      * provided, otherwise they return unwrapped values.
-     *
-     * Explicit chaining can be enabled by using the `_.chain` method.
      *
      * @name _
      * @constructor
@@ -1260,6 +1264,14 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
        * @type boolean
        */
       support.enumPrototypes = propertyIsEnumerable.call(ctor, 'prototype');
+
+      /**
+       * Detect if `Function#bind` exists and is inferred to be fast (all but V8).
+       *
+       * @memberOf _.support
+       * @type boolean
+       */
+      support.fastBind = nativeBind && !isV8;
 
       /**
        * Detect if functions can be decompiled by `Function#toString`
@@ -1510,40 +1522,6 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
     /*--------------------------------------------------------------------------*/
 
     /**
-     * The base implementation of `_.bind` that creates the bound function and
-     * sets its meta data.
-     *
-     * @private
-     * @param {Array} bindData The bind data array.
-     * @returns {Function} Returns the new bound function.
-     */
-    function baseBind(bindData) {
-      var func = bindData[0],
-          partialArgs = bindData[2],
-          thisArg = bindData[4];
-
-      function bound() {
-        // `Function#bind` spec
-        // http://es5.github.io/#x15.3.4.5
-        if (partialArgs) {
-          var args = partialArgs.slice();
-          push.apply(args, arguments);
-        }
-        // mimic the constructor's `return` behavior
-        // http://es5.github.io/#x13.2.2
-        if (this instanceof bound) {
-          // ensure `new bound` is an instance of `func`
-          var thisBinding = baseCreate(func.prototype),
-              result = func.apply(thisBinding, args || arguments);
-          return isObject(result) ? result : thisBinding;
-        }
-        return func.apply(thisArg, args || arguments);
-      }
-      setBindData(bound, bindData);
-      return bound;
-    }
-
-    /**
      * The base implementation of `_.clone` without argument juggling or support
      * for `thisArg` binding.
      *
@@ -1636,32 +1614,6 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
     }
 
     /**
-     * The base implementation of `_.create` without support for assigning
-     * properties to the created object.
-     *
-     * @private
-     * @param {Object} prototype The object to inherit from.
-     * @returns {Object} Returns the new object.
-     */
-    function baseCreate(prototype, properties) {
-      return isObject(prototype) ? nativeCreate(prototype) : {};
-    }
-    // fallback for browsers without `Object.create`
-    if (!nativeCreate) {
-      baseCreate = (function() {
-        function Object() {}
-        return function(prototype) {
-          if (isObject(prototype)) {
-            Object.prototype = prototype;
-            var result = new Object;
-            Object.prototype = null;
-          }
-          return result || context.Object();
-        };
-      }());
-    }
-
-    /**
      * The base implementation of `_.createCallback` without support for creating
      * "_.pluck" or "_.where" style callbacks.
      *
@@ -1675,30 +1627,24 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
       if (typeof func != 'function') {
         return identity;
       }
-      // exit early for no `thisArg` or already bound by `Function#bind`
-      if (typeof thisArg == 'undefined' || !('prototype' in func)) {
+      // exit early if there is no `thisArg`
+      if (typeof thisArg == 'undefined') {
         return func;
       }
-      var bindData = func.__bindData__;
+      var bindData = func.__bindData__ || (support.funcNames && !func.name);
       if (typeof bindData == 'undefined') {
-        if (support.funcNames) {
-          bindData = !func.name;
+        var source = reThis && fnToString.call(func);
+        if (!support.funcNames && source && !reFuncName.test(source)) {
+          bindData = true;
         }
-        bindData = bindData || !support.funcDecomp;
-        if (!bindData) {
-          var source = fnToString.call(func);
-          if (!support.funcNames) {
-            bindData = !reFuncName.test(source);
-          }
-          if (!bindData) {
-            // checks if `func` references the `this` keyword and stores the result
-            bindData = reThis.test(source);
-            setBindData(func, bindData);
-          }
+        if (support.funcNames || !bindData) {
+          // checks if `func` references the `this` keyword and stores the result
+          bindData = !support.funcDecomp || reThis.test(source);
+          setBindData(func, bindData);
         }
       }
       // exit early if there are no `this` references or `func` is bound
-      if (bindData === false || (bindData !== true && bindData[1] & 1)) {
+      if (bindData !== true && (bindData && bindData[1] & 1)) {
         return func;
       }
       switch (argCount) {
@@ -1716,61 +1662,6 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
         };
       }
       return bind(func, thisArg);
-    }
-
-    /**
-     * The base implementation of `createWrapper` that creates the wrapper and
-     * sets its meta data.
-     *
-     * @private
-     * @param {Array} bindData The bind data array.
-     * @returns {Function} Returns the new function.
-     */
-    function baseCreateWrapper(bindData) {
-      var func = bindData[0],
-          bitmask = bindData[1],
-          partialArgs = bindData[2],
-          partialRightArgs = bindData[3],
-          thisArg = bindData[4],
-          arity = bindData[5];
-
-      var isBind = bitmask & 1,
-          isBindKey = bitmask & 2,
-          isCurry = bitmask & 4,
-          isCurryBound = bitmask & 8,
-          key = func;
-
-      function bound() {
-        var thisBinding = isBind ? thisArg : this;
-        if (isCurry || partialArgs || partialRightArgs) {
-          if (partialArgs) {
-            var args = partialArgs.slice();
-            push.apply(args, arguments);
-          }
-          if (partialRightArgs || isCurry) {
-            args || (args = slice(arguments));
-            if (partialRightArgs) {
-              push.apply(args, partialRightArgs);
-            }
-            if (isCurry && args.length < arity) {
-              bitmask |= 16 & ~32;
-              return baseCreateWrapper([func, (isCurryBound ? bitmask : bitmask & ~3), args, null, thisArg, arity]);
-            }
-          }
-        }
-        args || (args = arguments);
-        if (isBindKey) {
-          func = thisBinding[key];
-        }
-        if (this instanceof bound) {
-          thisBinding = baseCreate(func.prototype);
-          var result = func.apply(thisBinding, args);
-          return isObject(result) ? result : thisBinding;
-        }
-        return func.apply(thisBinding, args);
-      }
-      setBindData(bound, bindData);
-      return bound;
     }
 
     /**
@@ -1889,11 +1780,8 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
       var isArr = className == arrayClass;
       if (!isArr) {
         // unwrap any `lodash` wrapped values
-        var aWrapped = hasOwnProperty.call(a, '__wrapped__'),
-            bWrapped = hasOwnProperty.call(b, '__wrapped__');
-
-        if (aWrapped || bWrapped) {
-          return baseIsEqual(aWrapped ? a.__wrapped__ : a, bWrapped ? b.__wrapped__ : b, callback, isWhere, stackA, stackB);
+        if (hasOwnProperty.call(a, '__wrapped__ ') || hasOwnProperty.call(b, '__wrapped__')) {
+          return baseIsEqual(a.__wrapped__ || a, b.__wrapped__ || b, callback, isWhere, stackA, stackB);
         }
         // exit for functions and DOM nodes
         if (className != objectClass || (!support.nodeClass && (isNode(a) || isNode(b)))) {
@@ -1904,10 +1792,10 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
             ctorB = !support.argsObject && isArguments(b) ? Object : b.constructor;
 
         // non `Object` object instances with different constructors are not equal
-        if (ctorA != ctorB &&
-              !(isFunction(ctorA) && ctorA instanceof ctorA && isFunction(ctorB) && ctorB instanceof ctorB) &&
-              ('constructor' in a && 'constructor' in b)
-            ) {
+        if (ctorA != ctorB && !(
+              isFunction(ctorA) && ctorA instanceof ctorA &&
+              isFunction(ctorB) && ctorB instanceof ctorB
+            )) {
           return false;
         }
       }
@@ -2051,19 +1939,6 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
     }
 
     /**
-     * The base implementation of `_.random` without argument juggling or support
-     * for returning floating-point numbers.
-     *
-     * @private
-     * @param {number} min The minimum possible value.
-     * @param {number} max The maximum possible value.
-     * @returns {number} Returns a random number.
-     */
-    function baseRandom(min, max) {
-      return min + floor(nativeRandom() * (max - min + 1));
-    }
-
-    /**
      * The base implementation of `_.uniq` without support for callback shorthands
      * or `thisArg` binding.
      *
@@ -2167,15 +2042,16 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      *  provided to the new function.
      * @param {*} [thisArg] The `this` binding of `func`.
      * @param {number} [arity] The arity of `func`.
-     * @returns {Function} Returns the new function.
+     * @returns {Function} Returns the new bound function.
      */
-    function createWrapper(func, bitmask, partialArgs, partialRightArgs, thisArg, arity) {
+    function createBound(func, bitmask, partialArgs, partialRightArgs, thisArg, arity) {
       var isBind = bitmask & 1,
           isBindKey = bitmask & 2,
           isCurry = bitmask & 4,
           isCurryBound = bitmask & 8,
           isPartial = bitmask & 16,
-          isPartialRight = bitmask & 32;
+          isPartialRight = bitmask & 32,
+          key = func;
 
       if (!isBindKey && !isFunction(func)) {
         throw new TypeError;
@@ -2189,36 +2065,74 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
         isPartialRight = partialRightArgs = false;
       }
       var bindData = func && func.__bindData__;
-      if (bindData && bindData !== true) {
-        bindData = bindData.slice();
-
-        // set `thisBinding` is not previously bound
+      if (bindData) {
         if (isBind && !(bindData[1] & 1)) {
           bindData[4] = thisArg;
         }
-        // set if previously bound but not currently (subsequent curried functions)
         if (!isBind && bindData[1] & 1) {
           bitmask |= 8;
         }
-        // set curried arity if not yet set
         if (isCurry && !(bindData[1] & 4)) {
           bindData[5] = arity;
         }
-        // append partial left arguments
         if (isPartial) {
           push.apply(bindData[2] || (bindData[2] = []), partialArgs);
         }
-        // append partial right arguments
         if (isPartialRight) {
           push.apply(bindData[3] || (bindData[3] = []), partialRightArgs);
         }
-        // merge flags
         bindData[1] |= bitmask;
-        return createWrapper.apply(null, bindData);
+        return createBound.apply(null, bindData);
       }
-      // fast path for `_.bind`
-      var creater = (bitmask == 1 || bitmask === 17) ? baseBind : baseCreateWrapper;
-      return creater([func, bitmask, partialArgs, partialRightArgs, thisArg, arity]);
+      // use `Function#bind` if it exists and is fast
+      // (in V8 `Function#bind` is slower except when partially applied)
+      if (isBind && !(isBindKey || isCurry || isPartialRight) &&
+          (support.fastBind || (nativeBind && isPartial))) {
+        if (isPartial) {
+          var args = [thisArg];
+          push.apply(args, partialArgs);
+        }
+        var bound = isPartial
+          ? nativeBind.apply(func, args)
+          : nativeBind.call(func, thisArg);
+      }
+      else {
+        bound = function() {
+          // `Function#bind` spec
+          // http://es5.github.io/#x15.3.4.5
+          var args = arguments,
+              thisBinding = isBind ? thisArg : this;
+
+          if (isCurry || isPartial || isPartialRight) {
+            args = nativeSlice.call(args);
+            if (isPartial) {
+              unshift.apply(args, partialArgs);
+            }
+            if (isPartialRight) {
+              push.apply(args, partialRightArgs);
+            }
+            if (isCurry && args.length < arity) {
+              bitmask |= 16 & ~32;
+              return createBound(func, (isCurryBound ? bitmask : bitmask & ~3), args, null, thisArg, arity);
+            }
+          }
+          if (isBindKey) {
+            func = thisBinding[key];
+          }
+          if (this instanceof bound) {
+            // ensure `new bound` is an instance of `func`
+            thisBinding = createObject(func.prototype);
+
+            // mimic the constructor's `return` behavior
+            // http://es5.github.io/#x13.2.2
+            var result = func.apply(thisBinding, args);
+            return isObject(result) ? result : thisBinding;
+          }
+          return func.apply(thisBinding, args);
+        };
+      }
+      setBindData(bound, nativeSlice.call(arguments));
+      return bound;
     }
 
     /**
@@ -2270,6 +2184,28 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
     }
 
     /**
+     * Creates a new object with the specified `prototype`.
+     *
+     * @private
+     * @param {Object} prototype The prototype object.
+     * @returns {Object} Returns the new object.
+     */
+    function createObject(prototype) {
+      return isObject(prototype) ? nativeCreate(prototype) : {};
+    }
+    // fallback for browsers without `Object.create`
+    if (!nativeCreate) {
+      createObject = function(prototype) {
+        if (isObject(prototype)) {
+          noop.prototype = prototype;
+          var result = new noop;
+          noop.prototype = null;
+        }
+        return result || {};
+      };
+    }
+
+    /**
      * Used by `escape` to convert characters to HTML entities.
      *
      * @private
@@ -2298,7 +2234,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      *
      * @private
      * @param {Function} func The function to set data on.
-     * @param {Array} value The data array to set.
+     * @param {*} value The value to set.
      */
     var setBindData = !defineProperty ? noop : function(func, value) {
       descriptor.value = value;
@@ -2382,7 +2318,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
     if (!support.argsClass) {
       isArguments = function(value) {
         return value && typeof value == 'object' && typeof value.length == 'number' &&
-          hasOwnProperty.call(value, 'callee') && !propertyIsEnumerable.call(value, 'callee') || false;
+          hasOwnProperty.call(value, 'callee') || false;
       };
     }
 
@@ -2538,16 +2474,16 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {Object} Returns the destination object.
      * @example
      *
-     * _.assign({ 'name': 'fred' }, { 'employer': 'slate' });
-     * // => { 'name': 'fred', 'employer': 'slate' }
+     * _.assign({ 'name': 'moe' }, { 'age': 40 });
+     * // => { 'name': 'moe', 'age': 40 }
      *
      * var defaults = _.partialRight(_.assign, function(a, b) {
      *   return typeof a == 'undefined' ? b : a;
      * });
      *
-     * var object = { 'name': 'barney' };
-     * defaults(object, { 'name': 'fred', 'employer': 'slate' });
-     * // => { 'name': 'barney', 'employer': 'slate' }
+     * var food = { 'name': 'apple' };
+     * defaults(food, { 'name': 'banana', 'type': 'fruit' });
+     * // => { 'name': 'apple', 'type': 'fruit' }
      */
     var assign = createIterator(defaultsIteratorOptions, {
       'top':
@@ -2579,17 +2515,17 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {*} Returns the cloned value.
      * @example
      *
-     * var characters = [
-     *   { 'name': 'barney', 'age': 36 },
-     *   { 'name': 'fred',   'age': 40 }
+     * var stooges = [
+     *   { 'name': 'moe', 'age': 40 },
+     *   { 'name': 'larry', 'age': 50 }
      * ];
      *
-     * var shallow = _.clone(characters);
-     * shallow[0] === characters[0];
+     * var shallow = _.clone(stooges);
+     * shallow[0] === stooges[0];
      * // => true
      *
-     * var deep = _.clone(characters, true);
-     * deep[0] === characters[0];
+     * var deep = _.clone(stooges, true);
+     * deep[0] === stooges[0];
      * // => false
      *
      * _.mixin({
@@ -2633,13 +2569,13 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {*} Returns the deep cloned value.
      * @example
      *
-     * var characters = [
-     *   { 'name': 'barney', 'age': 36 },
-     *   { 'name': 'fred',   'age': 40 }
+     * var stooges = [
+     *   { 'name': 'moe', 'age': 40 },
+     *   { 'name': 'larry', 'age': 50 }
      * ];
      *
-     * var deep = _.cloneDeep(characters);
-     * deep[0] === characters[0];
+     * var deep = _.cloneDeep(stooges);
+     * deep[0] === stooges[0];
      * // => false
      *
      * var view = {
@@ -2659,42 +2595,6 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
     }
 
     /**
-     * Creates an object that inherits from the given `prototype` object. If a
-     * `properties` object is provided its own enumerable properties are assigned
-     * to the created object.
-     *
-     * @static
-     * @memberOf _
-     * @category Objects
-     * @param {Object} prototype The object to inherit from.
-     * @param {Object} [properties] The properties to assign to the object.
-     * @returns {Object} Returns the new object.
-     * @example
-     *
-     * function Shape() {
-     *   this.x = 0;
-     *   this.y = 0;
-     * }
-     *
-     * function Circle() {
-     *   Shape.call(this);
-     * }
-     *
-     * Circle.prototype = _.create(Shape.prototype, { 'constructor': Circle });
-     *
-     * var circle = new Circle;
-     * circle instanceof Circle;
-     * // => true
-     *
-     * circle instanceof Shape;
-     * // => true
-     */
-    function create(prototype, properties) {
-      var result = baseCreate(prototype);
-      return properties ? assign(result, properties) : result;
-    }
-
-    /**
      * Assigns own enumerable properties of source object(s) to the destination
      * object for all destination properties that resolve to `undefined`. Once a
      * property is set, additional defaults of the same property will be ignored.
@@ -2710,22 +2610,15 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {Object} Returns the destination object.
      * @example
      *
-     * var object = { 'name': 'barney' };
-     * _.defaults(object, { 'name': 'fred', 'employer': 'slate' });
-     * // => { 'name': 'barney', 'employer': 'slate' }
+     * var food = { 'name': 'apple' };
+     * _.defaults(food, { 'name': 'banana', 'type': 'fruit' });
+     * // => { 'name': 'apple', 'type': 'fruit' }
      */
     var defaults = createIterator(defaultsIteratorOptions);
 
     /**
      * This method is like `_.findIndex` except that it returns the key of the
      * first element that passes the callback check, instead of the element itself.
-     *
-     * If a property name is provided for `callback` the created "_.pluck" style
-     * callback will return the property value of the given element.
-     *
-     * If an object is provided for `callback` the created "_.where" style callback
-     * will return `true` for elements that have the properties of the given object,
-     * else `false`.
      *
      * @static
      * @memberOf _
@@ -2738,24 +2631,10 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {string|undefined} Returns the key of the found element, else `undefined`.
      * @example
      *
-     * var characters = {
-     *   'barney': {  'age': 36, 'blocked': false },
-     *   'fred': {    'age': 40, 'blocked': true },
-     *   'pebbles': { 'age': 1,  'blocked': false }
-     * };
-     *
-     * _.findKey(characters, function(chr) {
-     *   return chr.age < 40;
+     * _.findKey({ 'a': 1, 'b': 2, 'c': 3, 'd': 4 }, function(num) {
+     *   return num % 2 == 0;
      * });
-     * // => 'barney' (property order is not guaranteed across environments)
-     *
-     * // using "_.where" callback shorthand
-     * _.findKey(characters, { 'age': 1 });
-     * // => 'pebbles'
-     *
-     * // using "_.pluck" callback shorthand
-     * _.findKey(characters, 'blocked');
-     * // => 'fred'
+     * // => 'b' (property order is not guaranteed across environments)
      */
     function findKey(object, callback, thisArg) {
       var result;
@@ -2773,13 +2652,6 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * This method is like `_.findKey` except that it iterates over elements
      * of a `collection` in the opposite order.
      *
-     * If a property name is provided for `callback` the created "_.pluck" style
-     * callback will return the property value of the given element.
-     *
-     * If an object is provided for `callback` the created "_.where" style callback
-     * will return `true` for elements that have the properties of the given object,
-     * else `false`.
-     *
      * @static
      * @memberOf _
      * @category Objects
@@ -2791,24 +2663,10 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {string|undefined} Returns the key of the found element, else `undefined`.
      * @example
      *
-     * var characters = {
-     *   'barney': {  'age': 36, 'blocked': true },
-     *   'fred': {    'age': 40, 'blocked': false },
-     *   'pebbles': { 'age': 1,  'blocked': true }
-     * };
-     *
-     * _.findLastKey(characters, function(chr) {
-     *   return chr.age < 40;
+     * _.findLastKey({ 'a': 1, 'b': 2, 'c': 3, 'd': 4 }, function(num) {
+     *   return num % 2 == 1;
      * });
-     * // => returns `pebbles`, assuming `_.findKey` returns `barney`
-     *
-     * // using "_.where" callback shorthand
-     * _.findLastKey(characters, { 'age': 40 });
-     * // => 'fred'
-     *
-     * // using "_.pluck" callback shorthand
-     * _.findLastKey(characters, 'blocked');
-     * // => 'pebbles'
+     * // => returns `c`, assuming `_.findKey` returns `a`
      */
     function findLastKey(object, callback, thisArg) {
       var result;
@@ -2838,20 +2696,18 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {Object} Returns `object`.
      * @example
      *
-     * function Shape() {
-     *   this.x = 0;
-     *   this.y = 0;
+     * function Dog(name) {
+     *   this.name = name;
      * }
      *
-     * Shape.prototype.move = function(x, y) {
-     *   this.x += x;
-     *   this.y += y;
+     * Dog.prototype.bark = function() {
+     *   console.log('Woof, woof!');
      * };
      *
-     * _.forIn(new Shape, function(value, key) {
+     * _.forIn(new Dog('Dagny'), function(value, key) {
      *   console.log(key);
      * });
-     * // => logs 'x', 'y', and 'move' (property order is not guaranteed across environments)
+     * // => logs 'bark' and 'name' (property order is not guaranteed across environments)
      */
     var forIn = createIterator(eachIteratorOptions, forOwnIteratorOptions, {
       'useHas': false
@@ -2870,20 +2726,18 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {Object} Returns `object`.
      * @example
      *
-     * function Shape() {
-     *   this.x = 0;
-     *   this.y = 0;
+     * function Dog(name) {
+     *   this.name = name;
      * }
      *
-     * Shape.prototype.move = function(x, y) {
-     *   this.x += x;
-     *   this.y += y;
+     * Dog.prototype.bark = function() {
+     *   console.log('Woof, woof!');
      * };
      *
-     * _.forInRight(new Shape, function(value, key) {
+     * _.forInRight(new Dog('Dagny'), function(value, key) {
      *   console.log(key);
      * });
-     * // => logs 'move', 'y', and 'x' assuming `_.forIn ` logs 'x', 'y', and 'move'
+     * // => logs 'name' and 'bark' assuming `_.forIn ` logs 'bark' and 'name'
      */
     function forInRight(object, callback, thisArg) {
       var pairs = [];
@@ -3011,8 +2865,8 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {Object} Returns the created inverted object.
      * @example
      *
-     *  _.invert({ 'first': 'fred', 'second': 'barney' });
-     * // => { 'fred': 'first', 'barney': 'second' }
+     *  _.invert({ 'first': 'moe', 'second': 'larry' });
+     * // => { 'moe': 'first', 'larry': 'second' }
      */
     function invert(object) {
       var index = -1,
@@ -3041,8 +2895,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * // => false
      */
     function isBoolean(value) {
-      return value === true || value === false ||
-        value && typeof value == 'object' && toString.call(value) == boolClass || false;
+      return value === true || value === false || toString.call(value) == boolClass;
     }
 
     /**
@@ -3059,7 +2912,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * // => true
      */
     function isDate(value) {
-      return value && typeof value == 'object' && toString.call(value) == dateClass || false;
+      return value ? (typeof value == 'object' && toString.call(value) == dateClass) : false;
     }
 
     /**
@@ -3076,7 +2929,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * // => true
      */
     function isElement(value) {
-      return value && value.nodeType === 1 || false;
+      return value ? value.nodeType === 1 : false;
     }
 
     /**
@@ -3136,13 +2989,13 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {boolean} Returns `true` if the values are equivalent, else `false`.
      * @example
      *
-     * var object = { 'name': 'fred' };
-     * var copy = { 'name': 'fred' };
+     * var moe = { 'name': 'moe', 'age': 40 };
+     * var copy = { 'name': 'moe', 'age': 40 };
      *
-     * object == copy;
+     * moe == copy;
      * // => false
      *
-     * _.isEqual(object, copy);
+     * _.isEqual(moe, copy);
      * // => true
      *
      * var words = ['hello', 'goodbye'];
@@ -3311,8 +3164,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * // => true
      */
     function isNumber(value) {
-      return typeof value == 'number' ||
-        value && typeof value == 'object' && toString.call(value) == numberClass || false;
+      return typeof value == 'number' || toString.call(value) == numberClass;
     }
 
     /**
@@ -3325,18 +3177,18 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {boolean} Returns `true` if `value` is a plain object, else `false`.
      * @example
      *
-     * function Shape() {
-     *   this.x = 0;
-     *   this.y = 0;
+     * function Stooge(name, age) {
+     *   this.name = name;
+     *   this.age = age;
      * }
      *
-     * _.isPlainObject(new Shape);
+     * _.isPlainObject(new Stooge('moe', 40));
      * // => false
      *
      * _.isPlainObject([1, 2, 3]);
      * // => false
      *
-     * _.isPlainObject({ 'x': 0, 'y': 0 });
+     * _.isPlainObject({ 'name': 'moe', 'age': 40 });
      * // => true
      */
     var isPlainObject = !getPrototypeOf ? shimIsPlainObject : function(value) {
@@ -3361,11 +3213,11 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {boolean} Returns `true` if the `value` is a regular expression, else `false`.
      * @example
      *
-     * _.isRegExp(/fred/);
+     * _.isRegExp(/moe/);
      * // => true
      */
     function isRegExp(value) {
-      return value && objectTypes[typeof value] && toString.call(value) == regexpClass || false;
+      return (value && objectTypes[typeof value]) ? toString.call(value) == regexpClass : false;
     }
 
     /**
@@ -3378,12 +3230,11 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {boolean} Returns `true` if the `value` is a string, else `false`.
      * @example
      *
-     * _.isString('fred');
+     * _.isString('moe');
      * // => true
      */
     function isString(value) {
-      return typeof value == 'string' ||
-        value && typeof value == 'object' && toString.call(value) == stringClass || false;
+      return typeof value == 'string' || toString.call(value) == stringClass;
     }
 
     /**
@@ -3423,21 +3274,21 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @example
      *
      * var names = {
-     *   'characters': [
-     *     { 'name': 'barney' },
-     *     { 'name': 'fred' }
+     *   'stooges': [
+     *     { 'name': 'moe' },
+     *     { 'name': 'larry' }
      *   ]
      * };
      *
      * var ages = {
-     *   'characters': [
-     *     { 'age': 36 },
-     *     { 'age': 40 }
+     *   'stooges': [
+     *     { 'age': 40 },
+     *     { 'age': 50 }
      *   ]
      * };
      *
      * _.merge(names, ages);
-     * // => { 'characters': [{ 'name': 'barney', 'age': 36 }, { 'name': 'fred', 'age': 40 }] }
+     * // => { 'stooges': [{ 'name': 'moe', 'age': 40 }, { 'name': 'larry', 'age': 50 }] }
      *
      * var food = {
      *   'fruits': ['apple'],
@@ -3461,7 +3312,6 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
       if (!isObject(object)) {
         return object;
       }
-
       // allows working with `_.reduce` and `_.reduceRight` without using
       // their `index` and `collection` arguments
       if (typeof args[2] != 'number') {
@@ -3472,7 +3322,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
       } else if (length > 2 && typeof args[length - 1] == 'function') {
         callback = args[--length];
       }
-      var sources = slice(arguments, 1, length),
+      var sources = nativeSlice.call(arguments, 1, length),
           index = -1,
           stackA = getArray(),
           stackB = getArray();
@@ -3503,13 +3353,13 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {Object} Returns an object without the omitted properties.
      * @example
      *
-     * _.omit({ 'name': 'fred', 'age': 40 }, 'age');
-     * // => { 'name': 'fred' }
+     * _.omit({ 'name': 'moe', 'age': 40 }, 'age');
+     * // => { 'name': 'moe' }
      *
-     * _.omit({ 'name': 'fred', 'age': 40 }, function(value) {
+     * _.omit({ 'name': 'moe', 'age': 40 }, function(value) {
      *   return typeof value == 'number';
      * });
-     * // => { 'name': 'fred' }
+     * // => { 'name': 'moe' }
      */
     function omit(object, callback, thisArg) {
       var indexOf = getIndexOf(),
@@ -3543,8 +3393,8 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {Array} Returns new array of key-value pairs.
      * @example
      *
-     * _.pairs({ 'barney': 36, 'fred': 40 });
-     * // => [['barney', 36], ['fred', 40]] (property order is not guaranteed across environments)
+     * _.pairs({ 'moe': 30, 'larry': 40 });
+     * // => [['moe', 30], ['larry', 40]] (property order is not guaranteed across environments)
      */
     function pairs(object) {
       var index = -1,
@@ -3578,13 +3428,13 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {Object} Returns an object composed of the picked properties.
      * @example
      *
-     * _.pick({ 'name': 'fred', '_userid': 'fred1' }, 'name');
-     * // => { 'name': 'fred' }
+     * _.pick({ 'name': 'moe', '_userid': 'moe1' }, 'name');
+     * // => { 'name': 'moe' }
      *
-     * _.pick({ 'name': 'fred', '_userid': 'fred1' }, function(value, key) {
+     * _.pick({ 'name': 'moe', '_userid': 'moe1' }, function(value, key) {
      *   return key.charAt(0) != '_';
      * });
-     * // => { 'name': 'fred' }
+     * // => { 'name': 'moe' }
      */
     function pick(object, callback, thisArg) {
       var result = {};
@@ -3621,7 +3471,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @static
      * @memberOf _
      * @category Objects
-     * @param {Array|Object} object The object to iterate over.
+     * @param {Array|Object} collection The collection to iterate over.
      * @param {Function} [callback=identity] The function called per iteration.
      * @param {*} [accumulator] The custom accumulator value.
      * @param {*} [thisArg] The `this` binding of `callback`.
@@ -3643,6 +3493,8 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      */
     function transform(object, callback, accumulator, thisArg) {
       var isArr = isArray(object);
+      callback = baseCreateCallback(callback, thisArg, 4);
+
       if (accumulator == null) {
         if (isArr) {
           accumulator = [];
@@ -3650,15 +3502,12 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
           var ctor = object && object.constructor,
               proto = ctor && ctor.prototype;
 
-          accumulator = baseCreate(proto);
+          accumulator = createObject(proto);
         }
       }
-      if (callback) {
-        callback = baseCreateCallback(callback, thisArg, 4);
-        (isArr ? baseEach : forOwn)(object, function(value, index, object) {
-          return callback(accumulator, value, index, object);
-        });
-      }
+      (isArr ? baseEach : forOwn)(object, function(value, index, object) {
+        return callback(accumulator, value, index, object);
+      });
       return accumulator;
     }
 
@@ -3707,8 +3556,8 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * _.at(['a', 'b', 'c', 'd', 'e'], [0, 2, 4]);
      * // => ['a', 'c', 'e']
      *
-     * _.at(['fred', 'barney', 'pebbles'], 0, 2);
-     * // => ['fred', 'pebbles']
+     * _.at(['moe', 'larry', 'curly'], 0, 2);
+     * // => ['moe', 'curly']
      */
     function at(collection) {
       var args = arguments,
@@ -3747,10 +3596,10 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * _.contains([1, 2, 3], 1, 2);
      * // => false
      *
-     * _.contains({ 'name': 'fred', 'age': 40 }, 'fred');
+     * _.contains({ 'name': 'moe', 'age': 40 }, 'moe');
      * // => true
      *
-     * _.contains('pebbles', 'ur');
+     * _.contains('curly', 'ur');
      * // => true
      */
     function contains(collection, target, fromIndex) {
@@ -3837,20 +3686,20 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      *  else `false`.
      * @example
      *
-     * _.every([true, 1, null, 'yes']);
+     * _.every([true, 1, null, 'yes'], Boolean);
      * // => false
      *
-     * var characters = [
-     *   { 'name': 'barney', 'age': 36 },
-     *   { 'name': 'fred',   'age': 40 }
+     * var stooges = [
+     *   { 'name': 'moe', 'age': 40 },
+     *   { 'name': 'larry', 'age': 50 }
      * ];
      *
      * // using "_.pluck" callback shorthand
-     * _.every(characters, 'age');
+     * _.every(stooges, 'age');
      * // => true
      *
      * // using "_.where" callback shorthand
-     * _.every(characters, { 'age': 36 });
+     * _.every(stooges, { 'age': 50 });
      * // => false
      */
     function every(collection, callback, thisArg) {
@@ -3901,18 +3750,18 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * var evens = _.filter([1, 2, 3, 4, 5, 6], function(num) { return num % 2 == 0; });
      * // => [2, 4, 6]
      *
-     * var characters = [
-     *   { 'name': 'barney', 'age': 36, 'blocked': false },
-     *   { 'name': 'fred',   'age': 40, 'blocked': true }
+     * var food = [
+     *   { 'name': 'apple',  'organic': false, 'type': 'fruit' },
+     *   { 'name': 'carrot', 'organic': true,  'type': 'vegetable' }
      * ];
      *
      * // using "_.pluck" callback shorthand
-     * _.filter(characters, 'blocked');
-     * // => [{ 'name': 'fred', 'age': 40, 'blocked': true }]
+     * _.filter(food, 'organic');
+     * // => [{ 'name': 'carrot', 'organic': true, 'type': 'vegetable' }]
      *
      * // using "_.where" callback shorthand
-     * _.filter(characters, { 'age': 36 });
-     * // => [{ 'name': 'barney', 'age': 36, 'blocked': false }]
+     * _.filter(food, { 'type': 'fruit' });
+     * // => [{ 'name': 'apple', 'organic': false, 'type': 'fruit' }]
      */
     function filter(collection, callback, thisArg) {
       var result = [];
@@ -3962,24 +3811,24 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {*} Returns the found element, else `undefined`.
      * @example
      *
-     * var characters = [
-     *   { 'name': 'barney',  'age': 36, 'blocked': false },
-     *   { 'name': 'fred',    'age': 40, 'blocked': true },
-     *   { 'name': 'pebbles', 'age': 1,  'blocked': false }
+     * _.find([1, 2, 3, 4], function(num) {
+     *   return num % 2 == 0;
+     * });
+     * // => 2
+     *
+     * var food = [
+     *   { 'name': 'apple',  'organic': false, 'type': 'fruit' },
+     *   { 'name': 'banana', 'organic': true,  'type': 'fruit' },
+     *   { 'name': 'beet',   'organic': false, 'type': 'vegetable' }
      * ];
      *
-     * _.find(characters, function(chr) {
-     *   return chr.age < 40;
-     * });
-     * // => { 'name': 'barney', 'age': 36, 'blocked': false }
-     *
      * // using "_.where" callback shorthand
-     * _.find(characters, { 'age': 1 });
-     * // =>  { 'name': 'pebbles', 'age': 1, 'blocked': false }
+     * _.find(food, { 'type': 'vegetable' });
+     * // => { 'name': 'beet', 'organic': false, 'type': 'vegetable' }
      *
      * // using "_.pluck" callback shorthand
-     * _.find(characters, 'blocked');
-     * // => { 'name': 'fred', 'age': 40, 'blocked': true }
+     * _.find(food, 'organic');
+     * // => { 'name': 'banana', 'organic': true, 'type': 'fruit' }
      */
     function find(collection, callback, thisArg) {
       callback = lodash.createCallback(callback, thisArg, 3);
@@ -4043,10 +3892,6 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * element. The callback is bound to `thisArg` and invoked with three arguments;
      * (value, index|key, collection). Callbacks may exit iteration early by
      * explicitly returning `false`.
-     *
-     * Note: As with other "Collections" methods, objects with a `length` property
-     * are iterated like arrays. To avoid this behavior `_.forIn` or `_.forOwn`
-     * may be used for object iteration.
      *
      * @static
      * @memberOf _
@@ -4198,7 +4043,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * _.indexBy(keys, function(key) { return String.fromCharCode(key.code); });
      * // => { 'a': { 'dir': 'left', 'code': 97 }, 'd': { 'dir': 'right', 'code': 100 } }
      *
-     * _.indexBy(characters, function(key) { this.fromCharCode(key.code); }, String);
+     * _.indexBy(stooges, function(key) { this.fromCharCode(key.code); }, String);
      * // => { 'a': { 'dir': 'left', 'code': 97 }, 'd': { 'dir': 'right', 'code': 100 } }
      */
     var indexBy = createAggregator(function(result, value, key) {
@@ -4228,7 +4073,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * // => [['1', '2', '3'], ['4', '5', '6']]
      */
     function invoke(collection, methodName) {
-      var args = slice(arguments, 2),
+      var args = nativeSlice.call(arguments, 2),
           index = -1,
           isFunc = typeof methodName == 'function',
           length = collection ? collection.length : 0,
@@ -4270,14 +4115,14 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * _.map({ 'one': 1, 'two': 2, 'three': 3 }, function(num) { return num * 3; });
      * // => [3, 6, 9] (property order is not guaranteed across environments)
      *
-     * var characters = [
-     *   { 'name': 'barney', 'age': 36 },
-     *   { 'name': 'fred',   'age': 40 }
+     * var stooges = [
+     *   { 'name': 'moe', 'age': 40 },
+     *   { 'name': 'larry', 'age': 50 }
      * ];
      *
      * // using "_.pluck" callback shorthand
-     * _.map(characters, 'name');
-     * // => ['barney', 'fred']
+     * _.map(stooges, 'name');
+     * // => ['moe', 'larry']
      */
     function map(collection, callback, thisArg) {
       var index = -1,
@@ -4325,28 +4170,23 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * _.max([4, 2, 8, 6]);
      * // => 8
      *
-     * var characters = [
-     *   { 'name': 'barney', 'age': 36 },
-     *   { 'name': 'fred',   'age': 40 }
+     * var stooges = [
+     *   { 'name': 'moe', 'age': 40 },
+     *   { 'name': 'larry', 'age': 50 }
      * ];
      *
-     * _.max(characters, function(chr) { return chr.age; });
-     * // => { 'name': 'fred', 'age': 40 };
+     * _.max(stooges, function(stooge) { return stooge.age; });
+     * // => { 'name': 'larry', 'age': 50 };
      *
      * // using "_.pluck" callback shorthand
-     * _.max(characters, 'age');
-     * // => { 'name': 'fred', 'age': 40 };
+     * _.max(stooges, 'age');
+     * // => { 'name': 'larry', 'age': 50 };
      */
     function max(collection, callback, thisArg) {
       var computed = -Infinity,
           result = computed;
 
-      // allows working with functions like `_.map` without using
-      // their `index` argument as a callback
-      if (typeof callback != 'function' && thisArg && thisArg[callback] === collection) {
-        callback = null;
-      }
-      if (callback == null && isArray(collection)) {
+      if (!callback && isArray(collection)) {
         var index = -1,
             length = collection.length;
 
@@ -4357,7 +4197,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
           }
         }
       } else {
-        callback = (callback == null && isString(collection))
+        callback = (!callback && isString(collection))
           ? charAtCallback
           : lodash.createCallback(callback, thisArg, 3);
 
@@ -4400,28 +4240,23 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * _.min([4, 2, 8, 6]);
      * // => 2
      *
-     * var characters = [
-     *   { 'name': 'barney', 'age': 36 },
-     *   { 'name': 'fred',   'age': 40 }
+     * var stooges = [
+     *   { 'name': 'moe', 'age': 40 },
+     *   { 'name': 'larry', 'age': 50 }
      * ];
      *
-     * _.min(characters, function(chr) { return chr.age; });
-     * // => { 'name': 'barney', 'age': 36 };
+     * _.min(stooges, function(stooge) { return stooge.age; });
+     * // => { 'name': 'moe', 'age': 40 };
      *
      * // using "_.pluck" callback shorthand
-     * _.min(characters, 'age');
-     * // => { 'name': 'barney', 'age': 36 };
+     * _.min(stooges, 'age');
+     * // => { 'name': 'moe', 'age': 40 };
      */
     function min(collection, callback, thisArg) {
       var computed = Infinity,
           result = computed;
 
-      // allows working with functions like `_.map` without using
-      // their `index` argument as a callback
-      if (typeof callback != 'function' && thisArg && thisArg[callback] === collection) {
-        callback = null;
-      }
-      if (callback == null && isArray(collection)) {
+      if (!callback && isArray(collection)) {
         var index = -1,
             length = collection.length;
 
@@ -4432,7 +4267,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
           }
         }
       } else {
-        callback = (callback == null && isString(collection))
+        callback = (!callback && isString(collection))
           ? charAtCallback
           : lodash.createCallback(callback, thisArg, 3);
 
@@ -4448,7 +4283,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
     }
 
     /**
-     * Retrieves the value of a specified property from all elements in the collection.
+     * Retrieves the value of a specified property from all elements in the `collection`.
      *
      * @static
      * @memberOf _
@@ -4459,13 +4294,13 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {Array} Returns a new array of property values.
      * @example
      *
-     * var characters = [
-     *   { 'name': 'barney', 'age': 36 },
-     *   { 'name': 'fred',   'age': 40 }
+     * var stooges = [
+     *   { 'name': 'moe', 'age': 40 },
+     *   { 'name': 'larry', 'age': 50 }
      * ];
      *
-     * _.pluck(characters, 'name');
-     * // => ['barney', 'fred']
+     * _.pluck(stooges, 'name');
+     * // => ['moe', 'larry']
      */
     var pluck = map;
 
@@ -4578,18 +4413,18 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * var odds = _.reject([1, 2, 3, 4, 5, 6], function(num) { return num % 2 == 0; });
      * // => [1, 3, 5]
      *
-     * var characters = [
-     *   { 'name': 'barney', 'age': 36, 'blocked': false },
-     *   { 'name': 'fred',   'age': 40, 'blocked': true }
+     * var food = [
+     *   { 'name': 'apple',  'organic': false, 'type': 'fruit' },
+     *   { 'name': 'carrot', 'organic': true,  'type': 'vegetable' }
      * ];
      *
      * // using "_.pluck" callback shorthand
-     * _.reject(characters, 'blocked');
-     * // => [{ 'name': 'barney', 'age': 36, 'blocked': false }]
+     * _.reject(food, 'organic');
+     * // => [{ 'name': 'apple', 'organic': false, 'type': 'fruit' }]
      *
      * // using "_.where" callback shorthand
-     * _.reject(characters, { 'age': 36 });
-     * // => [{ 'name': 'fred', 'age': 40, 'blocked': true }]
+     * _.reject(food, { 'type': 'fruit' });
+     * // => [{ 'name': 'carrot', 'organic': true, 'type': 'vegetable' }]
      */
     function reject(collection, callback, thisArg) {
       callback = lodash.createCallback(callback, thisArg, 3);
@@ -4606,8 +4441,8 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @category Collections
      * @param {Array|Object|string} collection The collection to sample.
      * @param {number} [n] The number of elements to sample.
-     * @param- {Object} [guard] Allows working with functions like `_.map`
-     *  without using their `index` arguments as `n`.
+     * @param- {Object} [guard] Allows working with functions, like `_.map`,
+     *  without using their `key` and `object` arguments as sources.
      * @returns {Array} Returns the random sample(s) of `collection`.
      * @example
      *
@@ -4618,13 +4453,14 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * // => [3, 1]
      */
     function sample(collection, n, guard) {
-      if (collection && typeof collection.length != 'number') {
+      var length = collection ? collection.length : 0;
+      if (typeof length != 'number') {
         collection = values(collection);
       } else if (support.unindexedChars && isString(collection)) {
         collection = collection.split('');
       }
       if (n == null || guard) {
-        return collection ? collection[baseRandom(0, collection.length - 1)] : undefined;
+        return collection ? collection[random(length - 1)] : undefined;
       }
       var result = shuffle(collection);
       result.length = nativeMin(nativeMax(0, n), result.length);
@@ -4651,7 +4487,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
           result = Array(typeof length == 'number' ? length : 0);
 
       forEach(collection, function(value) {
-        var rand = baseRandom(0, ++index);
+        var rand = random(++index);
         result[index] = result[rand];
         result[rand] = value;
       });
@@ -4675,7 +4511,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * _.size({ 'one': 1, 'two': 2, 'three': 3 });
      * // => 3
      *
-     * _.size('pebbles');
+     * _.size('curly');
      * // => 5
      */
     function size(collection) {
@@ -4712,17 +4548,17 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * _.some([null, 0, 'yes', false], Boolean);
      * // => true
      *
-     * var characters = [
-     *   { 'name': 'barney', 'age': 36, 'blocked': false },
-     *   { 'name': 'fred',   'age': 40, 'blocked': true }
+     * var food = [
+     *   { 'name': 'apple',  'organic': false, 'type': 'fruit' },
+     *   { 'name': 'carrot', 'organic': true,  'type': 'vegetable' }
      * ];
      *
      * // using "_.pluck" callback shorthand
-     * _.some(characters, 'blocked');
+     * _.some(food, 'organic');
      * // => true
      *
      * // using "_.where" callback shorthand
-     * _.some(characters, { 'age': 1 });
+     * _.some(food, { 'type': 'meat' });
      * // => false
      */
     function some(collection, callback, thisArg) {
@@ -4840,16 +4676,16 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {Array} Returns a new array of elements that have the given properties.
      * @example
      *
-     * var characters = [
-     *   { 'name': 'barney', 'age': 36, 'pets': ['hoppy'] },
-     *   { 'name': 'fred',   'age': 40, 'pets': ['baby puss', 'dino'] }
+     * var stooges = [
+     *   { 'name': 'curly', 'age': 30, 'quotes': ['Oh, a wise guy, eh?', 'Poifect!'] },
+     *   { 'name': 'moe', 'age': 40, 'quotes': ['Spread out!', 'You knucklehead!'] }
      * ];
      *
-     * _.where(characters, { 'age': 36 });
-     * // => [{ 'name': 'barney', 'age': 36, 'pets': ['hoppy'] }]
+     * _.where(stooges, { 'age': 40 });
+     * // => [{ 'name': 'moe', 'age': 40, 'quotes': ['Spread out!', 'You knucklehead!'] }]
      *
-     * _.where(characters, { 'pets': ['dino'] });
-     * // => [{ 'name': 'fred', 'age': 40, 'pets': ['baby puss', 'dino'] }]
+     * _.where(stooges, { 'quotes': ['Poifect!'] });
+     * // => [{ 'name': 'curly', 'age': 30, 'quotes': ['Oh, a wise guy, eh?', 'Poifect!'] }]
      */
     var where = filter;
 
@@ -4932,13 +4768,6 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * This method is like `_.find` except that it returns the index of the first
      * element that passes the callback check, instead of the element itself.
      *
-     * If a property name is provided for `callback` the created "_.pluck" style
-     * callback will return the property value of the given element.
-     *
-     * If an object is provided for `callback` the created "_.where" style callback
-     * will return `true` for elements that have the properties of the given object,
-     * else `false`.
-     *
      * @static
      * @memberOf _
      * @category Arrays
@@ -4950,23 +4779,9 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {number} Returns the index of the found element, else `-1`.
      * @example
      *
-     * var characters = [
-     *   { 'name': 'barney',  'age': 36, 'blocked': false },
-     *   { 'name': 'fred',    'age': 40, 'blocked': true },
-     *   { 'name': 'pebbles', 'age': 1,  'blocked': false }
-     * ];
-     *
-     * _.findIndex(characters, function(chr) {
-     *   return chr.age < 20;
+     * _.findIndex(['apple', 'banana', 'beet'], function(food) {
+     *   return /^b/.test(food);
      * });
-     * // => 2
-     *
-     * // using "_.where" callback shorthand
-     * _.findIndex(characters, { 'age': 36 });
-     * // => 0
-     *
-     * // using "_.pluck" callback shorthand
-     * _.findIndex(characters, 'blocked');
      * // => 1
      */
     function findIndex(array, callback, thisArg) {
@@ -4986,13 +4801,6 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * This method is like `_.findIndex` except that it iterates over elements
      * of a `collection` from right to left.
      *
-     * If a property name is provided for `callback` the created "_.pluck" style
-     * callback will return the property value of the given element.
-     *
-     * If an object is provided for `callback` the created "_.where" style callback
-     * will return `true` for elements that have the properties of the given object,
-     * else `false`.
-     *
      * @static
      * @memberOf _
      * @category Arrays
@@ -5004,23 +4812,9 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {number} Returns the index of the found element, else `-1`.
      * @example
      *
-     * var characters = [
-     *   { 'name': 'barney',  'age': 36, 'blocked': true },
-     *   { 'name': 'fred',    'age': 40, 'blocked': false },
-     *   { 'name': 'pebbles', 'age': 1,  'blocked': true }
-     * ];
-     *
-     * _.findLastIndex(characters, function(chr) {
-     *   return chr.age > 30;
+     * _.findLastIndex(['apple', 'banana', 'beet'], function(food) {
+     *   return /^b/.test(food);
      * });
-     * // => 1
-     *
-     * // using "_.where" callback shorthand
-     * _.findLastIndex(characters, { 'age': 36 });
-     * // => 0
-     *
-     * // using "_.pluck" callback shorthand
-     * _.findLastIndex(characters, 'blocked');
      * // => 2
      */
     function findLastIndex(array, callback, thisArg) {
@@ -5071,19 +4865,24 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * });
      * // => [1, 2]
      *
-     * var characters = [
-     *   { 'name': 'barney',  'blocked': true,  'employer': 'slate' },
-     *   { 'name': 'fred',    'blocked': false, 'employer': 'slate' },
-     *   { 'name': 'pebbles', 'blocked': true,  'employer': 'na' }
+     * var food = [
+     *   { 'name': 'banana', 'organic': true },
+     *   { 'name': 'beet',   'organic': false },
      * ];
      *
      * // using "_.pluck" callback shorthand
-     * _.first(characters, 'blocked');
-     * // => [{ 'name': 'barney', 'blocked': true, 'employer': 'slate' }]
+     * _.first(food, 'organic');
+     * // => [{ 'name': 'banana', 'organic': true }]
+     *
+     * var food = [
+     *   { 'name': 'apple',  'type': 'fruit' },
+     *   { 'name': 'banana', 'type': 'fruit' },
+     *   { 'name': 'beet',   'type': 'vegetable' }
+     * ];
      *
      * // using "_.where" callback shorthand
-     * _.pluck(_.first(characters, { 'employer': 'slate' }), 'name');
-     * // => ['barney', 'fred']
+     * _.first(food, { 'type': 'fruit' });
+     * // => [{ 'name': 'apple', 'type': 'fruit' }, { 'name': 'banana', 'type': 'fruit' }]
      */
     function first(array, callback, thisArg) {
       var n = 0,
@@ -5136,20 +4935,20 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * _.flatten([1, [2], [3, [[4]]]], true);
      * // => [1, 2, 3, [[4]]];
      *
-     * var characters = [
-     *   { 'name': 'barney', 'age': 30, 'pets': ['hoppy'] },
-     *   { 'name': 'fred',   'age': 40, 'pets': ['baby puss', 'dino'] }
+     * var stooges = [
+     *   { 'name': 'curly', 'quotes': ['Oh, a wise guy, eh?', 'Poifect!'] },
+     *   { 'name': 'moe', 'quotes': ['Spread out!', 'You knucklehead!'] }
      * ];
      *
      * // using "_.pluck" callback shorthand
-     * _.flatten(characters, 'pets');
-     * // => ['hoppy', 'baby puss', 'dino']
+     * _.flatten(stooges, 'quotes');
+     * // => ['Oh, a wise guy, eh?', 'Poifect!', 'Spread out!', 'You knucklehead!']
      */
     function flatten(array, isShallow, callback, thisArg) {
       // juggle arguments
       if (typeof isShallow != 'boolean' && isShallow != null) {
         thisArg = callback;
-        callback = (typeof isShallow != 'function' && thisArg && thisArg[isShallow] === array) ? null : isShallow;
+        callback = !(thisArg && thisArg[isShallow] === array) ? isShallow : null;
         isShallow = false;
       }
       if (callback != null) {
@@ -5229,19 +5028,24 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * });
      * // => [1]
      *
-     * var characters = [
-     *   { 'name': 'barney',  'blocked': false, 'employer': 'slate' },
-     *   { 'name': 'fred',    'blocked': true,  'employer': 'slate' },
-     *   { 'name': 'pebbles', 'blocked': true,  'employer': 'na' }
+     * var food = [
+     *   { 'name': 'beet',   'organic': false },
+     *   { 'name': 'carrot', 'organic': true }
      * ];
      *
      * // using "_.pluck" callback shorthand
-     * _.initial(characters, 'blocked');
-     * // => [{ 'name': 'barney',  'blocked': false, 'employer': 'slate' }]
+     * _.initial(food, 'organic');
+     * // => [{ 'name': 'beet',   'organic': false }]
+     *
+     * var food = [
+     *   { 'name': 'banana', 'type': 'fruit' },
+     *   { 'name': 'beet',   'type': 'vegetable' },
+     *   { 'name': 'carrot', 'type': 'vegetable' }
+     * ];
      *
      * // using "_.where" callback shorthand
-     * _.pluck(_.initial(characters, { 'employer': 'na' }), 'name');
-     * // => ['barney', 'fred']
+     * _.initial(food, { 'type': 'vegetable' });
+     * // => [{ 'name': 'banana', 'type': 'fruit' }]
      */
     function initial(array, callback, thisArg) {
       var n = 0,
@@ -5354,19 +5158,24 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * });
      * // => [2, 3]
      *
-     * var characters = [
-     *   { 'name': 'barney',  'blocked': false, 'employer': 'slate' },
-     *   { 'name': 'fred',    'blocked': true,  'employer': 'slate' },
-     *   { 'name': 'pebbles', 'blocked': true,  'employer': 'na' }
+     * var food = [
+     *   { 'name': 'beet',   'organic': false },
+     *   { 'name': 'carrot', 'organic': true }
      * ];
      *
      * // using "_.pluck" callback shorthand
-     * _.pluck(_.last(characters, 'blocked'), 'name');
-     * // => ['fred', 'pebbles']
+     * _.last(food, 'organic');
+     * // => [{ 'name': 'carrot', 'organic': true }]
+     *
+     * var food = [
+     *   { 'name': 'banana', 'type': 'fruit' },
+     *   { 'name': 'beet',   'type': 'vegetable' },
+     *   { 'name': 'carrot', 'type': 'vegetable' }
+     * ];
      *
      * // using "_.where" callback shorthand
-     * _.last(characters, { 'employer': 'na' });
-     * // => [{ 'name': 'pebbles', 'blocked': true, 'employer': 'na' }]
+     * _.last(food, { 'type': 'vegetable' });
+     * // => [{ 'name': 'beet', 'type': 'vegetable' }, { 'name': 'carrot', 'type': 'vegetable' }]
      */
     function last(array, callback, thisArg) {
       var n = 0,
@@ -5391,13 +5200,6 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * Gets the index at which the last occurrence of `value` is found using strict
      * equality for comparisons, i.e. `===`. If `fromIndex` is negative, it is used
      * as the offset from the end of the collection.
-     *
-     * If a property name is provided for `callback` the created "_.pluck" style
-     * callback will return the property value of the given element.
-     *
-     * If an object is provided for `callback` the created "_.where" style callback
-     * will return `true` for elements that have the properties of the given object,
-     * else `false`.
      *
      * @static
      * @memberOf _
@@ -5477,17 +5279,17 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {Array} Returns a new range array.
      * @example
      *
-     * _.range(4);
-     * // => [0, 1, 2, 3]
+     * _.range(10);
+     * // => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
      *
-     * _.range(1, 5);
-     * // => [1, 2, 3, 4]
+     * _.range(1, 11);
+     * // => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
      *
-     * _.range(0, 20, 5);
-     * // => [0, 5, 10, 15]
+     * _.range(0, 30, 5);
+     * // => [0, 5, 10, 15, 20, 25]
      *
-     * _.range(0, -4, -1);
-     * // => [0, -1, -2, -3]
+     * _.range(0, -10, -1);
+     * // => [0, -1, -2, -3, -4, -5, -6, -7, -8, -9]
      *
      * _.range(1, 4, 0);
      * // => [1, 1, 1]
@@ -5503,7 +5305,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
         end = start;
         start = 0;
       }
-      // use `Array(length)` so engines like Chakra and V8 avoid slower modes
+      // use `Array(length)` so engines, like Chakra and V8, avoid slower modes
       // http://youtu.be/XAqIpGU8ZZk#t=17m25s
       var index = -1,
           length = nativeMax(0, ceil((end - start) / (step || 1))),
@@ -5603,19 +5405,24 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * });
      * // => [3]
      *
-     * var characters = [
-     *   { 'name': 'barney',  'blocked': true,  'employer': 'slate' },
-     *   { 'name': 'fred',    'blocked': false,  'employer': 'slate' },
-     *   { 'name': 'pebbles', 'blocked': true, 'employer': 'na' }
+     * var food = [
+     *   { 'name': 'banana', 'organic': true },
+     *   { 'name': 'beet',   'organic': false },
      * ];
      *
      * // using "_.pluck" callback shorthand
-     * _.pluck(_.rest(characters, 'blocked'), 'name');
-     * // => ['fred', 'pebbles']
+     * _.rest(food, 'organic');
+     * // => [{ 'name': 'beet', 'organic': false }]
+     *
+     * var food = [
+     *   { 'name': 'apple',  'type': 'fruit' },
+     *   { 'name': 'banana', 'type': 'fruit' },
+     *   { 'name': 'beet',   'type': 'vegetable' }
+     * ];
      *
      * // using "_.where" callback shorthand
-     * _.rest(characters, { 'employer': 'slate' });
-     * // => [{ 'name': 'pebbles', 'blocked': true, 'employer': 'na' }]
+     * _.rest(food, { 'type': 'fruit' });
+     * // => [{ 'name': 'beet', 'type': 'vegetable' }]
      */
     function rest(array, callback, thisArg) {
       if (typeof callback != 'number' && callback != null) {
@@ -5764,7 +5571,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
       // juggle arguments
       if (typeof isSorted != 'boolean' && isSorted != null) {
         thisArg = callback;
-        callback = (typeof isSorted != 'function' && thisArg && thisArg[isSorted] === array) ? null : isSorted;
+        callback = !(thisArg && thisArg[isSorted] === array) ? isSorted : null;
         isSorted = false;
       }
       if (callback != null) {
@@ -5789,7 +5596,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * // => [2, 3, 4]
      */
     function without(array) {
-      return difference(array, slice(arguments, 1));
+      return difference(array, nativeSlice.call(arguments, 1));
     }
 
     /**
@@ -5805,8 +5612,8 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {Array} Returns a new array of grouped elements.
      * @example
      *
-     * _.zip(['fred', 'barney'], [30, 40], [true, false]);
-     * // => [['fred', 30, true], ['barney', 40, false]]
+     * _.zip(['moe', 'larry'], [30, 40], [true, false]);
+     * // => [['moe', 30, true], ['larry', 40, false]]
      */
     function zip() {
       var array = arguments.length > 1 ? arguments : arguments[0],
@@ -5835,8 +5642,8 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      *  corresponding values.
      * @example
      *
-     * _.zipObject(['fred', 'barney'], [30, 40]);
-     * // => { 'fred': 30, 'barney': 40 }
+     * _.zipObject(['moe', 'larry'], [30, 40]);
+     * // => { 'moe': 30, 'larry': 40 }
      */
     function zipObject(keys, values) {
       var index = -1,
@@ -5909,14 +5716,14 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      *   return greeting + ' ' + this.name;
      * };
      *
-     * func = _.bind(func, { 'name': 'fred' }, 'hi');
+     * func = _.bind(func, { 'name': 'moe' }, 'hi');
      * func();
-     * // => 'hi fred'
+     * // => 'hi moe'
      */
     function bind(func, thisArg) {
       return arguments.length > 2
-        ? createWrapper(func, 17, slice(arguments, 2), null, thisArg)
-        : createWrapper(func, 1, null, null, thisArg);
+        ? createBound(func, 17, nativeSlice.call(arguments, 2), null, thisArg)
+        : createBound(func, 1, null, null, thisArg);
     }
 
     /**
@@ -5950,7 +5757,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
 
       while (++index < length) {
         var key = funcs[index];
-        object[key] = createWrapper(object[key], 1, null, null, object);
+        object[key] = createBound(object[key], 1, null, null, object);
       }
       return object;
     }
@@ -5972,7 +5779,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @example
      *
      * var object = {
-     *   'name': 'fred',
+     *   'name': 'moe',
      *   'greet': function(greeting) {
      *     return greeting + ' ' + this.name;
      *   }
@@ -5980,19 +5787,19 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      *
      * var func = _.bindKey(object, 'greet', 'hi');
      * func();
-     * // => 'hi fred'
+     * // => 'hi moe'
      *
      * object.greet = function(greeting) {
-     *   return greeting + 'ya ' + this.name + '!';
+     *   return greeting + ', ' + this.name + '!';
      * };
      *
      * func();
-     * // => 'hiya fred!'
+     * // => 'hi, moe!'
      */
     function bindKey(object, key) {
       return arguments.length > 2
-        ? createWrapper(key, 19, slice(arguments, 2), null, object)
-        : createWrapper(key, 3, null, null, object);
+        ? createBound(key, 19, nativeSlice.call(arguments, 2), null, object)
+        : createBound(key, 3, null, null, object);
     }
 
     /**
@@ -6009,7 +5816,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @example
      *
      * var realNameMap = {
-     *   'pebbles': 'penelope'
+     *   'curly': 'jerome'
      * };
      *
      * var format = function(name) {
@@ -6022,8 +5829,8 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * };
      *
      * var welcome = _.compose(greet, format);
-     * welcome('pebbles');
-     * // => 'Hiya Penelope!'
+     * welcome('curly');
+     * // => 'Hiya Jerome!'
      */
     function compose() {
       var funcs = arguments,
@@ -6060,9 +5867,9 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {Function} Returns a callback function.
      * @example
      *
-     * var characters = [
-     *   { 'name': 'barney', 'age': 36 },
-     *   { 'name': 'fred',   'age': 40 }
+     * var stooges = [
+     *   { 'name': 'moe', 'age': 40 },
+     *   { 'name': 'larry', 'age': 50 }
      * ];
      *
      * // wrap to create custom callback shorthands
@@ -6073,8 +5880,8 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      *   };
      * });
      *
-     * _.filter(characters, 'age__gt38');
-     * // => [{ 'name': 'fred', 'age': 40 }]
+     * _.filter(stooges, 'age__gt45');
+     * // => [{ 'name': 'larry', 'age': 50 }]
      */
     function createCallback(func, thisArg, argCount) {
       var type = typeof func;
@@ -6143,7 +5950,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      */
     function curry(func, arity) {
       arity = typeof arity == 'number' ? arity : (+arity || func.length);
-      return createWrapper(func, 4, null, null, null, arity);
+      return createBound(func, 4, null, null, null, arity);
     }
 
     /**
@@ -6290,11 +6097,11 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
       if (!isFunction(func)) {
         throw new TypeError;
       }
-      var args = slice(arguments, 1);
+      var args = nativeSlice.call(arguments, 1);
       return setTimeout(function() { func.apply(undefined, args); }, 1);
     }
     // use `setImmediate` if available in Node.js
-    if (setImmediate) {
+    if (isV8 && moduleExports && typeof setImmediate == 'function') {
       defer = function(func) {
         if (!isFunction(func)) {
           throw new TypeError;
@@ -6324,7 +6131,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
       if (!isFunction(func)) {
         throw new TypeError;
       }
-      var args = slice(arguments, 2);
+      var args = nativeSlice.call(arguments, 2);
       return setTimeout(function() { func.apply(undefined, args); }, wait);
     }
 
@@ -6348,22 +6155,19 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      *   return n < 2 ? n : fibonacci(n - 1) + fibonacci(n - 2);
      * });
      *
-     * fibonacci(9)
-     * // => 34
-     *
      * var data = {
-     *   'fred': { 'name': 'fred', 'age': 40 },
-     *   'pebbles': { 'name': 'pebbles', 'age': 1 }
+     *   'moe': { 'name': 'moe', 'age': 40 },
+     *   'curly': { 'name': 'curly', 'age': 60 }
      * };
      *
      * // modifying the result cache
-     * var get = _.memoize(function(name) { return data[name]; }, _.identity);
-     * get('pebbles');
-     * // => { 'name': 'pebbles', 'age': 1 }
+     * var stooge = _.memoize(function(name) { return data[name]; }, _.identity);
+     * stooge('curly');
+     * // => { 'name': 'curly', 'age': 60 }
      *
-     * get.cache.pebbles.name = 'penelope';
-     * get('pebbles');
-     * // => { 'name': 'penelope', 'age': 1 }
+     * stooge.cache.curly.name = 'jerome';
+     * stooge('curly');
+     * // => { 'name': 'jerome', 'age': 60 }
      */
     function memoize(func, resolver) {
       if (!isFunction(func)) {
@@ -6433,11 +6237,11 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      *
      * var greet = function(greeting, name) { return greeting + ' ' + name; };
      * var hi = _.partial(greet, 'hi');
-     * hi('fred');
-     * // => 'hi fred'
+     * hi('moe');
+     * // => 'hi moe'
      */
     function partial(func) {
-      return createWrapper(func, 16, slice(arguments, 1));
+      return createBound(func, 16, nativeSlice.call(arguments, 1));
     }
 
     /**
@@ -6468,7 +6272,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * // => { '_': _, 'jq': $ }
      */
     function partialRight(func) {
-      return createWrapper(func, 32, null, slice(arguments, 1));
+      return createBound(func, 32, null, nativeSlice.call(arguments, 1));
     }
 
     /**
@@ -6519,7 +6323,8 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
       debounceOptions.maxWait = wait;
       debounceOptions.trailing = trailing;
 
-      return debounce(func, wait, debounceOptions);
+      var result = debounce(func, wait, debounceOptions);
+      return result;
     }
 
     /**
@@ -6536,15 +6341,22 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {Function} Returns the new function.
      * @example
      *
-     * var p = _.wrap(_.escape, function(func, text) {
-     *   return '<p>' + func(text) + '</p>';
+     * var hello = function(name) { return 'hello ' + name; };
+     * hello = _.wrap(hello, function(func) {
+     *   return 'before, ' + func('moe') + ', after';
      * });
-     *
-     * p('Fred, Wilma, & Pebbles');
-     * // => '<p>Fred, Wilma, &amp; Pebbles</p>'
+     * hello();
+     * // => 'before, hello moe, after'
      */
     function wrap(value, wrapper) {
-      return createWrapper(wrapper, 16, [value]);
+      if (!isFunction(wrapper)) {
+        throw new TypeError;
+      }
+      return function() {
+        var args = [value];
+        push.apply(args, arguments);
+        return wrapper.apply(this, args);
+      };
     }
 
     /*--------------------------------------------------------------------------*/
@@ -6560,8 +6372,8 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {string} Returns the escaped string.
      * @example
      *
-     * _.escape('Fred, Wilma, & Pebbles');
-     * // => 'Fred, Wilma, &amp; Pebbles'
+     * _.escape('Moe, Larry & Curly');
+     * // => 'Moe, Larry &amp; Curly'
      */
     function escape(string) {
       return string == null ? '' : String(string).replace(reUnescapedHtml, escapeHtmlChar);
@@ -6577,8 +6389,8 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {*} Returns `value`.
      * @example
      *
-     * var object = { 'name': 'fred' };
-     * _.identity(object) === object;
+     * var moe = { 'name': 'moe' };
+     * moe === _.identity(moe);
      * // => true
      */
     function identity(value) {
@@ -6602,11 +6414,11 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      *   }
      * });
      *
-     * _.capitalize('fred');
-     * // => 'Fred'
+     * _.capitalize('moe');
+     * // => 'Moe'
      *
-     * _('fred').capitalize();
-     * // => 'Fred'
+     * _('moe').capitalize();
+     * // => 'Moe'
      */
     function mixin(object, source) {
       var ctor = object,
@@ -6626,12 +6438,9 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
 
             push.apply(args, arguments);
             var result = func.apply(object, args);
-            if (value && typeof value == 'object' && value === result) {
-              return this;
-            }
-            result = new ctor(result);
-            result.__chain__ = this.__chain__;
-            return result;
+            return (value && typeof value == 'object' && value === result)
+              ? this
+              : new ctor(result);
           };
         }
       });
@@ -6655,22 +6464,6 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
     }
 
     /**
-     * A no-operation function.
-     *
-     * @static
-     * @memberOf _
-     * @category Utilities
-     * @example
-     *
-     * var object = { 'name': 'fred' };
-     * _.noop(object) === undefined;
-     * // => true
-     */
-    function noop() {
-      // no operation performed
-    }
-
-    /**
      * Converts the given value into an integer of the specified radix.
      * If `radix` is `undefined` or `0` a `radix` of `10` is used unless the
      * `value` is a hexadecimal, in which case a `radix` of `16` is used.
@@ -6690,7 +6483,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * // => 8
      */
     var parseInt = nativeParseInt(whitespace + '08') == 8 ? nativeParseInt : function(value, radix) {
-      // Firefox < 21 and Opera < 15 follow the ES3 specified implementation of `parseInt`
+      // Firefox and Opera still follow the ES3 specified implementation of `parseInt`
       return nativeParseInt(isString(value) ? value.replace(reLeadingSpacesAndZeros, '') : value, radix || 0);
     };
 
@@ -6745,11 +6538,10 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
       } else {
         max = +max || 0;
       }
-      if (floating || min % 1 || max % 1) {
-        var rand = nativeRandom();
-        return nativeMin(min + (rand * (max - min + parseFloat('1e-' + ((rand +'').length - 1)))), max);
-      }
-      return baseRandom(min, max);
+      var rand = nativeRandom();
+      return (floating || min % 1 || max % 1)
+        ? nativeMin(min + (rand * (max - min + parseFloat('1e-' + ((rand +'').length - 1)))), max)
+        : min + floor(rand * (max - min + 1));
     }
 
     /**
@@ -6817,8 +6609,8 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      *
      * // using the "interpolate" delimiter to create a compiled template
      * var compiled = _.template('hello <%= name %>');
-     * compiled({ 'name': 'fred' });
-     * // => 'hello fred'
+     * compiled({ 'name': 'moe' });
+     * // => 'hello moe'
      *
      * // using the "escape" delimiter to escape HTML in data property values
      * _.template('<b><%- value %></b>', { 'value': '<script>' });
@@ -6826,16 +6618,16 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      *
      * // using the "evaluate" delimiter to generate HTML
      * var list = '<% _.forEach(people, function(name) { %><li><%- name %></li><% }); %>';
-     * _.template(list, { 'people': ['fred', 'barney'] });
-     * // => '<li>fred</li><li>barney</li>'
+     * _.template(list, { 'people': ['moe', 'larry'] });
+     * // => '<li>moe</li><li>larry</li>'
      *
      * // using the ES6 delimiter as an alternative to the default "interpolate" delimiter
-     * _.template('hello ${ name }', { 'name': 'pebbles' });
-     * // => 'hello pebbles'
+     * _.template('hello ${ name }', { 'name': 'curly' });
+     * // => 'hello curly'
      *
      * // using the internal `print` function in "evaluate" delimiters
-     * _.template('<% print("hello " + name); %>!', { 'name': 'barney' });
-     * // => 'hello barney!'
+     * _.template('<% print("hello " + name); %>!', { 'name': 'larry' });
+     * // => 'hello larry!'
      *
      * // using a custom template delimiters
      * _.templateSettings = {
@@ -6847,8 +6639,8 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      *
      * // using the `imports` option to import jQuery
      * var list = '<% $.each(people, function(name) { %><li><%- name %></li><% }); %>';
-     * _.template(list, { 'people': ['fred', 'barney'] }, { 'imports': { '$': jQuery } });
-     * // => '<li>fred</li><li>barney</li>'
+     * _.template(list, { 'people': ['moe', 'larry'] }, { 'imports': { '$': jQuery } });
+     * // => '<li>moe</li><li>larry</li>'
      *
      * // using the `sourceURL` option to specify a custom sourceURL for the template
      * var compiled = _.template('hello <%= name %>', null, { 'sourceURL': '/basic/greeting.jst' });
@@ -6878,7 +6670,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
       // and Laura Doktorova's doT.js
       // https://github.com/olado/doT
       var settings = lodash.templateSettings;
-      text = String(text || '');
+      text || (text = '');
 
       // avoid missing dependencies when `iteratorTemplate` is not defined
       options = defaults({}, options, settings);
@@ -7019,8 +6811,8 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {string} Returns the unescaped string.
      * @example
      *
-     * _.unescape('Fred, Barney &amp; Pebbles');
-     * // => 'Fred, Barney & Pebbles'
+     * _.unescape('Moe, Larry &amp; Curly');
+     * // => 'Moe, Larry & Curly'
      */
     function unescape(string) {
       return string == null ? '' : String(string).replace(reEscapedHtml, unescapeHtmlChar);
@@ -7050,8 +6842,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
     /*--------------------------------------------------------------------------*/
 
     /**
-     * Creates a `lodash` object that wraps the given value with explicit
-     * method chaining enabled.
+     * Creates a `lodash` object that wraps the given value.
      *
      * @static
      * @memberOf _
@@ -7060,18 +6851,17 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {Object} Returns the wrapper object.
      * @example
      *
-     * var characters = [
-     *   { 'name': 'barney',  'age': 36 },
-     *   { 'name': 'fred',    'age': 40 },
-     *   { 'name': 'pebbles', 'age': 1 }
+     * var stooges = [
+     *   { 'name': 'moe', 'age': 40 },
+     *   { 'name': 'larry', 'age': 50 },
+     *   { 'name': 'curly', 'age': 60 }
      * ];
      *
-     * var youngest = _.chain(characters)
-     *     .sortBy('age')
-     *     .map(function(chr) { return chr.name + ' is ' + chr.age; })
-     *     .first()
-     *     .value();
-     * // => 'pebbles is 1'
+     * var youngest = _.chain(stooges)
+     *     .sortBy(function(stooge) { return stooge.age; })
+     *     .map(function(stooge) { return stooge.name + ' is ' + stooge.age; })
+     *     .first();
+     * // => 'moe is 40'
      */
     function chain(value) {
       value = new lodashWrapper(value);
@@ -7094,10 +6884,12 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @example
      *
      * _([1, 2, 3, 4])
-     *  .tap(function(array) { array.pop(); })
-     *  .reverse()
+     *  .filter(function(num) { return num % 2 == 0; })
+     *  .tap(function(array) { console.log(array); })
+     *  .map(function(num) { return num * num; })
      *  .value();
-     * // => [3, 2, 1]
+     * // => // [2, 4] (logged)
+     * // => [4, 16]
      */
     function tap(value, interceptor) {
       interceptor(value);
@@ -7105,7 +6897,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
     }
 
     /**
-     * Enables explicit method chaining on the wrapper object.
+     * Enables method chaining on the wrapper object.
      *
      * @name chain
      * @memberOf _
@@ -7113,21 +6905,11 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @returns {*} Returns the wrapper object.
      * @example
      *
-     * var characters = [
-     *   { 'name': 'barney', 'age': 36 },
-     *   { 'name': 'fred',   'age': 40 }
-     * ];
-     *
-     * // without explicit chaining
-     * _(characters).first();
-     * // => { 'name': 'barney', 'age': 36 }
-     *
-     * // with explicit chaining
-     * _(characters).chain()
-     *   .first()
-     *   .pick('age')
-     *   .value()
-     * // => { 'age': 36 }
+     * var sum = _([1, 2, 3])
+     *     .chain()
+     *     .reduce(function(sum, num) { return sum + num; })
+     *     .value()
+     * // => 6`
      */
     function wrapperChain() {
       this.__chain__ = true;
@@ -7180,7 +6962,6 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
     lodash.compact = compact;
     lodash.compose = compose;
     lodash.countBy = countBy;
-    lodash.create = create;
     lodash.createCallback = createCallback;
     lodash.curry = curry;
     lodash.debounce = debounce;
@@ -7290,7 +7071,6 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
     lodash.lastIndexOf = lastIndexOf;
     lodash.mixin = mixin;
     lodash.noConflict = noConflict;
-    lodash.noop = noop;
     lodash.parseInt = parseInt;
     lodash.random = random;
     lodash.reduce = reduce;
@@ -7363,7 +7143,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
      * @memberOf _
      * @type string
      */
-    lodash.VERSION = '2.2.1';
+    lodash.VERSION = '2.2.0';
 
     // add "Chaining" functions to the wrapper
     lodash.prototype.chain = wrapperChain;
@@ -7431,7 +7211,7 @@ require.register("lodash-lodash/dist/lodash.compat.js", function(exports, requir
   // expose Lo-Dash
   var _ = runInContext();
 
-  // some AMD build optimizers like r.js check for condition patterns like the following:
+  // some AMD build optimizers, like r.js, check for condition patterns like the following:
   if (typeof define == 'function' && typeof define.amd == 'object' && define.amd) {
     // Expose Lo-Dash to the global object even when an AMD loader is present in
     // case Lo-Dash was injected by a third-party script and not intended to be
@@ -7713,6 +7493,75 @@ require.register("mongoose-knockout/adapter/index.js", function(exports, require
 exports.socket = require('./socket');
 
 exports.rest = require('./rest');
+
+});
+require.register("mongoose-knockout/storage.js", function(exports, require, module){
+// Generated by CoffeeScript 1.6.3
+var Storage, co, oa, oo, _,
+  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+_ = require('lodash');
+
+oo = ko.observable;
+
+oa = ko.observableArray;
+
+co = ko.computed;
+
+Storage = (function() {
+  Storage.create_socket = function(name_space, io) {
+    var socket;
+    socket = io.connect('/socket_api_storage_' + name_space);
+    return socket;
+  };
+
+  function Storage(options) {
+    if (options == null) {
+      options = {};
+    }
+    this.update = __bind(this.update, this);
+    this.set = __bind(this.set, this);
+    this.get = __bind(this.get, this);
+    this._end_point = __bind(this._end_point, this);
+    this.socket = options.socket ? options.socket : Storage.create_socket('', io);
+    this.name_space = options.name_space || '';
+    this.storage = oo(false);
+  }
+
+  Storage.prototype._end_point = function(name) {
+    return name;
+  };
+
+  Storage.prototype.get = function(cb) {
+    var _this = this;
+    return this.socket.emit(this._end_point('get'), null, function(err, d) {
+      _this.storage(d);
+      if (cb != null) {
+        return cb(d);
+      }
+    });
+  };
+
+  Storage.prototype.set = function(data, cb) {
+    var _this = this;
+    return this.socket.emit(this._end_point('set'), data, function(err) {
+      if (cb != null) {
+        return cb(err);
+      }
+    });
+  };
+
+  Storage.prototype.update = function(cb) {
+    var _this = this;
+    cb(this.storage());
+    return this.set(this.storage(), function(err) {});
+  };
+
+  return Storage;
+
+}).call(this);
+
+module.exports = Storage;
 
 });
 require.register("mongoose-knockout/index.js", function(exports, require, module){

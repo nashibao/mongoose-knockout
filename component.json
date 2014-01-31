@@ -7,7 +7,7 @@
   "dependencies": {
     "ForbesLindesay/ajax": "*",
     "component/json": "*",
-    "lodash/lodash": "*"
+    "lodash/lodash": "2.2.0"
   },
   "development": {},
   "license": "MIT",
@@ -16,6 +16,7 @@
     "adapter/socket.js",
     "adapter/rest.js",
     "adapter/index.js",
+    "storage.js",
     "index.js"
   ]
 }
