@@ -7756,6 +7756,13 @@ Model = (function() {
       return node;
     };
     this.notified = options.notified || false;
+    this.network_count = oo(0);
+    this.network_status = co(function() {
+      if (_this.network_count() === 0) {
+        return "none";
+      }
+      return "loading";
+    });
   }
 
   Model.prototype.validate = function(doc) {
@@ -7792,6 +7799,7 @@ Model = (function() {
   };
 
   Model.prototype._debug_error = function(err, options) {
+    this.network_count(this.network_count() - 1);
     this.last_err(err);
     if (err) {
       console.log(err);
@@ -7807,6 +7815,7 @@ Model = (function() {
       }
       return false;
     }
+    this.network_count(this.network_count() + 1);
     this.adapter.create(query, function(err) {
       if (cb) {
         cb(err);
@@ -7821,6 +7830,7 @@ Model = (function() {
     if (query.update) {
       delete query.update["_id"];
     }
+    this.network_count(this.network_count() + 1);
     return this.adapter.update(query, function(err) {
       if (cb) {
         cb(err);
@@ -7831,6 +7841,7 @@ Model = (function() {
 
   Model.prototype.remove = function(query, temp_options, cb) {
     var _this = this;
+    this.network_count(this.network_count() + 1);
     return this.adapter.remove(query, function(err) {
       if (cb) {
         cb(err);
@@ -7850,6 +7861,7 @@ Model = (function() {
       this.cursors.push(cursor);
     }
     cursor.status('loading');
+    this.network_count(this.network_count() + 1);
     this.adapter.findOne(query, function(err, doc) {
       doc = _this._map(doc);
       cursor.last_err = err;
@@ -7884,6 +7896,7 @@ Model = (function() {
       this.cursors.push(cursor);
     }
     cursor.status('loading');
+    this.network_count(this.network_count() + 1);
     this.adapter.find(query, function(err, docs, options) {
       var already, doc, _i, _len;
       docs = _.map(docs, _this._map);
@@ -7942,6 +7955,7 @@ Model = (function() {
       this.cursors.push(cursor);
     }
     cursor.status('loading');
+    this.network_count(this.network_count() + 1);
     this.adapter.count(query, function(err, count) {
       cursor.last_err = err;
       if (err) {
@@ -7966,6 +7980,7 @@ Model = (function() {
       this.cursors.push(cursor);
     }
     cursor.status('loading');
+    this.network_count(this.network_count() + 1);
     this.adapter.aggregate(query, function(err, docs) {
       var doc, _i, _len;
       cursor.last_err = err;

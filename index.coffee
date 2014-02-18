@@ -151,6 +151,11 @@ class Model
 
     @notified = options.notified || false
 
+    @network_count = oo(0)
+    @network_status = co ()=>
+      return "none" if @network_count() == 0
+      return "loading"
+
   # todo: update validation
   validate: (doc)=>
     for key of @model
@@ -174,6 +179,7 @@ class Model
     return true
 
   _debug_error: (err, options)=>
+    @network_count(@network_count()-1)
     @last_err(err)
     if err
       console.log err
@@ -184,6 +190,7 @@ class Model
       if cb
         cb(@last_validate_err())
       return false
+    @network_count(@network_count()+1)
     @adapter.create query, (err)=>
       if cb
         cb(err)
@@ -193,12 +200,14 @@ class Model
   update: (query, temp_options, cb)=>
     if query.update
       delete query.update["_id"]
+    @network_count(@network_count()+1)
     @adapter.update query, (err)=>
       if cb
         cb(err)
       @_debug_error(err)
 
   remove: (query, temp_options, cb)=>
+    @network_count(@network_count()+1)
     @adapter.remove query, (err)=>
       if cb
         cb(err)
@@ -213,6 +222,7 @@ class Model
       cursor = new Cursor(@, 'findOne', query, cb)
       @cursors.push(cursor)
     cursor.status('loading')
+    @network_count(@network_count()+1)
     @adapter.findOne query, (err, doc)=>
       doc = @_map(doc)
       cursor.last_err = err
@@ -240,6 +250,7 @@ class Model
       cursor = new Cursor(@, 'find', query, cb)
       @cursors.push(cursor)
     cursor.status('loading')
+    @network_count(@network_count()+1)
     @adapter.find query, (err, docs, options)=>
       docs = _.map(docs, @_map)
       cursor.last_err = err
@@ -281,6 +292,7 @@ class Model
       cursor = new Cursor(@, 'count', query, cb)
       @cursors.push(cursor)
     cursor.status('loading')
+    @network_count(@network_count()+1)
     @adapter.count query, (err, count)=>
       cursor.last_err = err
       if err
@@ -299,6 +311,7 @@ class Model
       cursor = new Cursor(@, 'aggregate', query, cb)
       @cursors.push(cursor)
     cursor.status('loading')
+    @network_count(@network_count()+1)
     @adapter.aggregate query, (err, docs)=>
       cursor.last_err = err
       if err
