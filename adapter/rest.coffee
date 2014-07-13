@@ -32,7 +32,7 @@ class RestAdapter
       dataType: 'json'
       data: {query: q}
       success: (data, textStatus, jqXHR)=>
-        cb(data.err)
+        cb(data.err, data.doc)
         @cursor_update()
     }
 

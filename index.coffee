@@ -191,9 +191,9 @@ class Model
         cb(@last_validate_err())
       return false
     @network_count(@network_count()+1)
-    @adapter.create query, (err)=>
+    @adapter.create query, (err, ndoc)=>
       if cb
-        cb(err)
+        cb(err, ndoc)
       @_debug_error(err)
     return true
 
