@@ -7895,7 +7895,9 @@ Model = (function() {
         if (err) {
           cursor.errors.push(err);
         }
-        cursor._docs[doc['_id']] = doc;
+        if (doc) {
+          cursor._docs[doc['_id']] = doc;
+        }
         cursor.val(doc);
         cursor.status('loaded');
         if (cb) {
