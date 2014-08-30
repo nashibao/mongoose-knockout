@@ -47,9 +47,10 @@ Storage = (function() {
 
   Storage.prototype.set = function(data, cb) {
     return this.socket.emit(this._end_point('set'), data, (function(_this) {
-      return function(err) {
+      return function(err, d) {
+        _this.storage(d);
         if (cb != null) {
-          return cb(err);
+          return cb(err, d);
         }
       };
     })(this));
@@ -58,7 +59,7 @@ Storage = (function() {
   Storage.prototype.update = function(cb) {
     cb(this.storage());
     return this.set(this.storage(), (function(_this) {
-      return function(err) {};
+      return function(err, d) {};
     })(this));
   };
 
