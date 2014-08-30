@@ -27,13 +27,12 @@ class Storage
       cb(d) if cb?
 
   set: (data, cb)=>
-    @socket.emit @_end_point('set'), data, (err, d)=>
-      @storage(d)
-      cb(err, d) if cb?
+    @socket.emit @_end_point('set'), data, (err)=>
+      cb(err) if cb?
 
   # reactive
   update: (cb)=>
     cb(@storage())
-    @set @storage(), (err, d)=>
+    @set @storage(), (err)=>
 
 module.exports = Storage
