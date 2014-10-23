@@ -7430,8 +7430,8 @@ _socket_emitter = {};
 Emitter(_socket_emitter);
 
 SocketAdapter = (function() {
-  SocketAdapter.on = function(cb) {
-    return _socket_emitter.on(cb);
+  SocketAdapter.on = function(name, cb) {
+    return _socket_emitter.on(name, cb);
   };
 
   SocketAdapter.create_socket = function(name_space, io) {

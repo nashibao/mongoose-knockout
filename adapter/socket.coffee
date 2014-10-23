@@ -11,8 +11,8 @@ Emitter(_socket_emitter)
 
 class SocketAdapter
 
-  @on: (cb) ->
-    _socket_emitter.on cb
+  @on: (name, cb) ->
+    _socket_emitter.on name, cb
 
   @create_socket: (name_space, io)=>
     name = '/socket_api_' + name_space
