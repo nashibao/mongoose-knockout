@@ -7,7 +7,7 @@ _disconnect_num = 0
 
 _socket_emitter = {}
 
-new Emitter(_socket_emitter)
+Emitter(_socket_emitter)
 
 class SocketAdapter
 
