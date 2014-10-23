@@ -1,12 +1,37 @@
 
+Emitter = require('emitter')
+
 _sockets = {}
 
+_disconnect_num = 0
+
+_socket_emitter = new Emitter({})
+
 class SocketAdapter
+
+  @on: (cb) ->
+    _socket_emitter.on cb
+
   @create_socket: (name_space, io)=>
     name = '/socket_api_' + name_space
     return _sockets[name] if name of _sockets
     socket = io.connect name
     _sockets[name] = socket
+
+    socket.on 'connect', ()=>
+      console.log '-- connected --', name_space
+      if _disconnect_num > 0
+        _disconnect_num -= 1
+        if _disconnect_num == 0
+          console.log 'reconnect'
+          _socket_emitter.emit 'reconnect'
+
+    socket.on 'disconnect', ()=>
+      console.log '-- disconnected --', name_space
+      _disconnect_num += 1
+      if _disconnect_num == 1
+        _socket_emitter.emit 'disconnect'
+
     return socket
 
   constructor: (options)->
@@ -19,13 +44,6 @@ class SocketAdapter
     return @collection_name + " " + name
 
   initialize: ()=>
-    # initialize ---
-    @socket.on 'connect', ()=>
-      console.log '-- connected --', @name_space
-
-    @socket.on 'disconnect', ()=>
-      console.log '-- disconnected --', @name_space
-
     # update
     # 単純に再読み込みしている
     @socket.on @_end_point('update'), (data)=>
