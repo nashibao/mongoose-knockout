@@ -7258,7 +7258,9 @@ _sockets = {};
 
 _disconnect_num = 0;
 
-_socket_emitter = new Emitter({});
+_socket_emitter = {};
+
+new Emitter(_socket_emitter);
 
 SocketAdapter = (function() {
   SocketAdapter.on = function(cb) {
