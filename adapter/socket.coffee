@@ -1,7 +1,12 @@
 
+_sockets = {}
+
 class SocketAdapter
   @create_socket: (name_space, io)=>
-    socket = io.connect '/socket_api_' + name_space
+    name = '/socket_api_' + name_space
+    return _sockets[name] if name of _sockets
+    socket = io.connect name
+    _sockets[name] = socket
     return socket
 
   constructor: (options)->
