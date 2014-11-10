@@ -13,13 +13,18 @@ _socket_emitter = {};
 Emitter(_socket_emitter);
 
 SocketAdapter = (function() {
+  SocketAdapter.host = function(host) {
+    return this._host = host || '';
+  };
+
   SocketAdapter.on = function(name, cb) {
     return _socket_emitter.on(name, cb);
   };
 
   SocketAdapter.create_socket = function(name_space, io) {
     var name, socket;
-    name = '/socket_api_' + name_space;
+    name = SocketAdapter._host || '';
+    name += '/socket_api_' + name_space;
     if (name in _sockets) {
       return _sockets[name];
     }
