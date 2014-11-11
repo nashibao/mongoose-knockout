@@ -23,8 +23,8 @@ SocketAdapter = (function() {
 
   SocketAdapter.create_socket = function(name_space, io) {
     var name, socket;
-    name = SocketAdapter._host || '';
-    name += '/socket_api_' + name_space;
+    SocketAdapter._host = SocketAdapter._host || '';
+    name = SocketAdapter._host + '/socket_api_' + name_space;
     if (name in _sockets) {
       return _sockets[name];
     }

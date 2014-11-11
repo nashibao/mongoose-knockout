@@ -1,5 +1,5 @@
 
-build: components index.coffee
+build: components index.coffee storage.coffee adapter/socket.coffee adapter/socket.coffee adapter/rest.coffee adapter/index.coffee
 	@echo building
 	coffee --compile --bare index.coffee
 	coffee --compile --bare storage.coffee

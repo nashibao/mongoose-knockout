@@ -18,10 +18,10 @@ class SocketAdapter
     _socket_emitter.on name, cb
 
   @create_socket: (name_space, io)=>
-    name = @_host || ''
-    name += '/socket_api_' + name_space
+    @_host = @_host || ''
+    name = @_host + '/socket_api_' + name_space
     return _sockets[name] if name of _sockets
-    socket = io.connect name
+    socket = io.connect(name)
     _sockets[name] = socket
 
     socket.on 'connect', ()=>
