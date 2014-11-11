@@ -11,9 +11,9 @@ oa = ko.observableArray;
 co = ko.computed;
 
 Storage = (function() {
-  Storage.create_socket = function(name_space, io) {
+  Storage.create_socket = function(host, name_space, io) {
     var socket;
-    socket = io.connect('/socket_api_storage_' + name_space);
+    socket = io.connect(host + '/socket_api_storage_' + name_space);
     return socket;
   };
 
@@ -25,7 +25,7 @@ Storage = (function() {
     this.set = __bind(this.set, this);
     this.get = __bind(this.get, this);
     this._end_point = __bind(this._end_point, this);
-    this.socket = options.socket ? options.socket : Storage.create_socket('', io);
+    this.socket = options.socket ? options.socket : Storage.create_socket(options.host, '', io);
     this.name_space = options.name_space || '';
     this.storage = oo(false);
   }

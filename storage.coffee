@@ -5,13 +5,13 @@ oa = ko.observableArray
 co = ko.computed
 
 class Storage
-  @create_socket: (name_space, io)=>
-    socket = io.connect '/socket_api_storage_' + name_space
+  @create_socket: (host, name_space, io)=>
+    socket = io.connect host + '/socket_api_storage_' + name_space
     return socket
 
   constructor: (options={})->
     # socket
-    @socket = if options.socket then options.socket else Storage.create_socket('', io)
+    @socket = if options.socket then options.socket else Storage.create_socket(options.host, '', io)
 
     # name space
     @name_space = options.name_space || ''
